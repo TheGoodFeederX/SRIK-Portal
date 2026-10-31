@@ -3,11 +3,11 @@
   "private": true,
   "packageManager": "pnpm@10.18.3",
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
-    "build": "pnpm -r build",
+    "dev": "pnpm --filter @srik/web dev",
+    "build": "pnpm --filter @srik/web build",
+    "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "lint": "pnpm -r lint",
     "db:generate": "pnpm --filter @srik/db generate",
     "db:migrate": "pnpm --filter @srik/db migrate",
     "db:seed": "pnpm --filter @srik/db seed"

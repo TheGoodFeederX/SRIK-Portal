@@ -1,17 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
   "buildCommand": "cd ../.. && pnpm --filter @srik/web build",
   "outputDirectory": "dist",
-  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
   "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://srik-portal-api.vercel.app/api/:path*"
-    },
-    {
-      "source": "/((?!api/).*)",
-      "destination": "/index.html"
-    }
+    { "source": "/api/v1/:path*", "destination": "/api/handler" },
+    { "source": "/api/v1", "destination": "/api/handler" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

@@ -1,7 +1,7 @@
 import { handle } from 'hono/vercel';
 import { app } from '../src/app.ts';
 
-// Default Node runtime (pin via project settings): scrypt + postgres-js need Node APIs, not edge.
+// Node runtime (not edge): scrypt + postgres need Node APIs.
 export const config = { runtime: 'nodejs' };
 
 export default handle(app);
