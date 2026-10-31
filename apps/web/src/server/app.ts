@@ -13,6 +13,7 @@ import { staffRoutes } from './routes/staff.ts';
 import { studentRoutes } from './routes/students.ts';
 import { academicRoutes } from './routes/academic.ts';
 import { attendanceRoutes } from './routes/attendance.ts';
+import { rateLimit } from './rate-limit.ts';
 import type { AppEnv } from './types.ts';
 
 // Lazily created so contract tests (no DB) can import the app. Routes that touch data require DATABASE_URL.
@@ -52,6 +53,16 @@ app.use('*', (c, next) => {
   });
   c.set('db', lazy);
   return next();
+});
+
+// Security headers (spec §56). CSP is intentionally absent here: the app shell sets it at the
+// hosting layer after reviewing Managed Auth origins (docs/security/AUTH_SECURITY.md).
+app.use('*', async (c, next) => {
+  await next();
+  c.header('X-Content-Type-Options', 'nosniff');
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  c.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  c.header('X-Frame-Options', 'DENY');
 });
 
 app.use('*', loadApplicationUser);
@@ -108,6 +119,10 @@ export function idParam(c: { req: { param: (k: string) => string | undefined } }
 const v1 = new Hono<AppEnv>();
 v1.get('/health', (c) => c.json({ data: { status: 'ok' }, requestId: c.var.requestId }));
 v1.route('/auth', me);
+// Sensitive application writes are rate limited per identity (spec §55). Password auth itself is
+// handled by Managed Auth, which owns its own attempt throttling.
+v1.use('/users/*', rateLimit({ key: 'user', limit: 30, windowMs: 60_000 }));
+v1.use('/onboarding/*', rateLimit({ key: 'link', limit: 20, windowMs: 60_000 }));
 v1.route('/users', userRoutes);
 v1.route('/onboarding', onboardingRoutes);
 v1.route('/audit-log', auditLogRoutes);

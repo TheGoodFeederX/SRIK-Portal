@@ -59,7 +59,8 @@ export async function verifyIdentity(
     res = await doFetch(`${baseUrl.replace(/\/$/, '')}/get-session`, {
       method: 'GET',
       // Better Auth reads the session token from its cookie, not from a bearer header.
-      headers: { cookie: `__Secure-neon-auth.session_token=${encodeURIComponent(token)}`, accept: 'application/json' },
+      // The value keeps its cookie encoding exactly as received (API Gateway signs it).
+      headers: { cookie: `__Secure-neon-auth.session_token=${token}`, accept: 'application/json' },
       signal: AbortSignal.timeout(8000),
     });
   } catch {

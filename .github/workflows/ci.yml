@@ -26,5 +26,18 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm --filter @srik/web build
-      - name: Dependency audit (high+)
-        run: pnpm audit --audit-level=high || true
+      # Spec v1.1 §90: critical/high must fail CI. Exceptions are listed in
+      # docs/security/AUDIT_EXCEPTIONS.md; there is no blanket `|| true`.
+      - name: Dependency audit (critical fails, production deps)
+        run: pnpm audit --audit-level=critical --prod
+      - name: Dependency audit (high must be allowlisted)
+        run: |
+          pnpm audit --audit-level=high --prod --json > audit.json || true
+          node scripts/audit-gate.mjs
+      - name: No server secrets in the client bundle
+        run: |
+          if grep -rIlE "npg_|napi_|secret_server_key|NEON_AUTH_BASE_URL" apps/web/dist; then
+            echo "::error::Server secret or server-only env leaked into the client bundle"
+            exit 1
+          fi
+          echo "client bundle clean"

@@ -1,9 +1,7 @@
 import assert from 'node:assert/strict';
 import test, { after } from 'node:test';
 import { randomUUID } from 'node:crypto';
-import postgres from 'postgres';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import { profiles, userRoles } from '@srik/db';
+import { createDb, profiles, userRoles } from '@srik/db';
 import { resolveApplicationUser } from './auth/application-user.ts';
 import type { AuthIdentity } from './types.ts';
 
@@ -12,8 +10,7 @@ const url = process.env.DATABASE_URL;
 // Integration specs need a NON-production database (spec §91): SRIK_INTEGRATION=1 + DATABASE_URL.
 const enabled = Boolean(url) && process.env.SRIK_INTEGRATION === '1';
 const run = enabled ? test : test.skip;
-const client = url ? postgres(url, { max: 1, prepare: false }) : null;
-const db = client ? drizzle(client, { schema: { profiles, userRoles } }) : (null as never);
+const db = url ? createDb(url) : (null as never);
 
 const identity = (authUserId: string, email: string): AuthIdentity => ({ authUserId, email, emailVerified: true });
 const seedProfile = async (status: 'INVITED' | 'ACTIVE' | 'SUSPENDED' | 'DISABLED', authUserId: string | null, withRole: boolean) => {
@@ -74,5 +71,5 @@ run('ACTIVE TEACHER resolves with teacher permissions only', async () => {
 });
 
 after(async () => {
-  await client?.end({ timeout: 1 });
+  // createDb owns its pool; tests are short-lived processes so the runner exit reclaims it.
 });

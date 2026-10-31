@@ -4,6 +4,8 @@ Portal Pengurusan Sekolah Rendah Islam Al-Khairiah (SRIK) — single-school modu
 satu deployment Vercel.
 
 - Blueprint rujukan: `docs/preserved/SRIK_PORTAL_ARCHITECTURE_MIGRATION_BLUEPRINT_v1.0.md`
+- Auth v1.1: Managed Better Auth (Neon) — lihat `docs/security/AUTH_SECURITY.md` dan
+  `docs/migrations/AUTH_MIGRATION_v1.1.md`
 - Frontend: Vite + React + TypeScript + Tailwind (PWA online-first)
 - API: Hono + Zod, di-serve sebagai Vercel Function dalam projek yang sama (`apps/web/api/handler.ts`)
 - DB: Neon PostgreSQL + Drizzle ORM (`packages/db`)
@@ -27,11 +29,13 @@ docs/preserved/         blueprint v1.0 (read-only)
 
 ```bash
 pnpm install
-cp .env.example .env
-pnpm db:migrate
-SEED_ADMIN_PASSWORD='<strong-password>' pnpm db:seed
-pnpm dev            # http://localhost:5173 (API ikut sekali, tiada proses kedua)
+cp .env.example .env          # DATABASE_URL + NEON_AUTH_BASE_URL + VITE_NEON_AUTH_URL
+pnpm db:migrate               # Jalankan pada branch Neon dev, bukan production
+pnpm db:seed                  # Cipta profil + role ADMIN (tiada kata laluan)
+pnpm dev                      # http://localhost:5173 (API ikut sekali)
 ```
+
+Pautkan identiti admin melalui `docs/runbooks/BOOTSTRAP_ADMIN.md` sebelum log masuk.
 
 ## Skrip
 
@@ -56,6 +60,9 @@ pnpm dev            # http://localhost:5173 (API ikut sekali, tiada proses kedua
 
 ## Prinsip yang dikuatkuasakan
 
+- Authentication: Managed Better Auth. Aplikasi **tidak** menyimpan kata laluan atau cookie sesi sendiri.
+  Identiti auth dipautkan melalui `profiles.auth_user_id`; identiti tanpa pautan/role, atau berstatus
+  `INVITED`/`SUSPENDED`/`DISABLED`, menerima sifar akses.
 - Authorization di server: `requirePermission()` + `scopedClassIds()` / `scopedStudentIds()`.
   Guru hanya nampak murid dalam kelas yang dia ajar atau kelas seliaan.
 - Registry frontend hanya navigasi — bukan keselamatan.
@@ -68,7 +75,7 @@ pnpm dev            # http://localhost:5173 (API ikut sekali, tiada proses kedua
 ## Deploy
 
 Satu projek Vercel: **https://srik-portal.vercel.app** (root `apps/web`, di-link ke
-`TheGoodFeederX/SRIK-Portal`). Env: `DATABASE_URL`, `AUTH_SECRET`, `CORS_ORIGINS`.
+`TheGoodFeederX/SRIK-Portal`). Env: `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `VITE_NEON_AUTH_URL`, `CORS_ORIGINS`.
 
 API dibundle ke `api-dist/app.js` (`vite.api.config.ts`) dan `api/handler.ts` menjambatani
 req/res Node -> `app.fetch`. Ini mengelak Vercel memuat semula graf dependency (drizzle-orm

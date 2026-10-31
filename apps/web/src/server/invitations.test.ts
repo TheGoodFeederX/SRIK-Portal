@@ -1,9 +1,7 @@
 import assert from 'node:assert/strict';
 import test, { after } from 'node:test';
 import { randomUUID } from 'node:crypto';
-import postgres from 'postgres';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import { accountInvitations, profiles, userRoles } from '@srik/db';
+import { accountInvitations, createDb, profiles, userRoles } from '@srik/db';
 import { normalise } from './test-helpers.ts';
 
 // Invitation lifecycle integration test (spec §85). Development branch only:
@@ -11,8 +9,7 @@ import { normalise } from './test-helpers.ts';
 const url = process.env.DATABASE_URL;
 const enabled = Boolean(url) && process.env.SRIK_INTEGRATION === '1';
 const run = enabled ? test : test.skip;
-const client = url ? postgres(url, { max: 1, prepare: false }) : null;
-const db = client ? drizzle(client, { schema: { profiles, userRoles, accountInvitations } }) : (null as never);
+const db = url ? createDb(url) : (null as never);
 
 // Invitation policy + guard helpers are pure/DB-only; importing the route module pulls in the app.
 const { INVITATION_TTL_HOURS, invitationExpiry, activeAdminCount } = await import('./invitation-policy.ts');
@@ -68,5 +65,5 @@ run('email normalization is stable before comparison', () => {
 });
 
 after(async () => {
-  await client?.end({ timeout: 1 });
+  // createDb owns its pool; process exit by the test runner reclaims it.
 });
