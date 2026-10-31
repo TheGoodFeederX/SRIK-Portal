@@ -12,5 +12,12 @@
     "db:migrate": "pnpm --filter @srik/db migrate",
     "db:seed": "pnpm --filter @srik/db seed"
   },
-  "engines": { "node": ">=22" }
+  "engines": {
+    "node": ">=22"
+  },
+  "pnpm": {
+    "overrides": {
+      "drizzle-orm": "0.38.4"
+    }
+  }
 }
