@@ -40,7 +40,7 @@ pnpm dev            # http://localhost:5173 (API ikut sekali, tiada proses kedua
 | `pnpm dev` | Vite + API dalam proses yang sama |
 | `pnpm lint` / `pnpm typecheck` | tsc semua package |
 | `pnpm test` | node:test — permission matrix, registry nav, auth helpers, kontrak API |
-| `pnpm build` | build PWA (`dist/`) |
+| `pnpm build` | build PWA (`dist/`) + bundle API (`api-dist/app.js`) |
 | `pnpm db:generate` / `db:migrate` / `db:seed` | Drizzle |
 
 ## Status fasa
@@ -67,8 +67,12 @@ pnpm dev            # http://localhost:5173 (API ikut sekali, tiada proses kedua
 
 ## Deploy
 
-Projek Vercel `srik-portal` (root `apps/web`), di-link ke `TheGoodFeederX/SRIK-Portal`.
-Env yang diperlukan: `DATABASE_URL`, `AUTH_SECRET`, `CORS_ORIGINS`.
+Satu projek Vercel: **https://srik-portal.vercel.app** (root `apps/web`, di-link ke
+`TheGoodFeederX/SRIK-Portal`). Env: `DATABASE_URL`, `AUTH_SECRET`, `CORS_ORIGINS`.
+
+API dibundle ke `api-dist/app.js` (`vite.api.config.ts`) dan `api/handler.ts` menjambatani
+req/res Node -> `app.fetch`. Ini mengelak Vercel memuat semula graf dependency (drizzle-orm
+berpecah dua instance) dan mengunci runtime Node 22.
 
 ## Migrasi repo asal
 
