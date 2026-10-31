@@ -1,0 +1,8 @@
+{
+  "name": "@srik/api",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "drizzle-orm": "file:../../node_modules/@srik/api-vendor/drizzle-orm"
+  }
+}

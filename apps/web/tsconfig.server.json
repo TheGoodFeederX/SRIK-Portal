@@ -1,5 +1,8 @@
 {
   "extends": "../../packages/shared/tsconfig.json",
-  "compilerOptions": { "types": ["node"] },
-  "include": ["src/server"]
+  "compilerOptions": {
+    "types": ["node"],
+    "lib": ["ES2022", "DOM"]
+  },
+  "include": ["api", "src/server"]
 }

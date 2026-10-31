@@ -4,3 +4,4 @@ dist
 **/dist
 .vercel
 *.local
+node_modules/@srik/api-vendor

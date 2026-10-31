@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile && node scripts/pin-drizzle.cjs",
   "buildCommand": "cd ../.. && pnpm --filter @srik/web build",
   "outputDirectory": "dist",
   "rewrites": [
