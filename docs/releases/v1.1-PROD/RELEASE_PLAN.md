@@ -34,7 +34,7 @@
 |---|---|---|---|
 | 1 | Git branch reviewed | ✅ | 3 commit, 60 fail (+5 096/−323) |
 | 2 | Branch comparison terhadap `main` | ✅ | `git diff main..feature/neon-auth-v1-1` disemak |
-| 3 | CI green | ⚠️ | CI GitHub hanya jalan pada push `main`; gate tempatan hijau; **perlu PR untuk CI pada branch** |
+| 3 | CI green | ✅ | run `3d375892` pada PR #1 — lint, typecheck, api typecheck, unit, build, audit gate, bundle gate semuanya lulus |
 | 4 | Production backup/recovery point | ❌ | belum dibuat |
 | 5 | Migration production reviewed | ✅ | `0001_worried_ravenous.sql` aditif sahaja |
 | 6 | Production trusted domain diketahui | ❌ | `https://srik-portal.vercel.app` perlu didaftarkan pada branch `main` |
@@ -46,7 +46,11 @@
 | 12 | Credential rotation selesai | ❌ | **token GitHub, Neon, Vercel masih aktif** |
 | 13 | Tiada SQL Stage B dalam release ini | ✅ | hanya migration A |
 
-**Kesimpulan gate: GAGAL (3 item kritikal: #4, #12, #7).** Cutover tidak boleh diteruskan.
+**Kesimpulan gate: GAGAL (item kritikal #4 recovery point, #7 Neon Auth production, #12 credential rotation).**
+Cutover tidak boleh diteruskan sehingga pemilik menutup ketiga-tiganya dan memberi
+`APPROVE PROD CUTOVER v1.1`.
+
+**PR:** https://github.com/TheGoodFeederX/SRIK-Portal/pull/1 (draf, belum merge)
 
 ---
 

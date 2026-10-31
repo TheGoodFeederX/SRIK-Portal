@@ -44,3 +44,15 @@ kadar 5xx tinggi selepas deploy
 ```
 
 Jika mana-mana berlaku: hentikan rollout, ikut §51 (`RELEASE_PLAN.md` §6), rekod dalam log ini.
+
+---
+
+## Pra-cutover (PROD-0 sahaja)
+
+| # | Masa (UTC) | Langkah | Operator | Keputusan | Rollback? | Nota |
+|---|---|---|---|---|---|---|
+| 0.1 | 2026-10-31 16:36 | Branch `feature/neon-auth-v1-1` dipush | agent | PASS | tidak | Stage A + 2 commit gate |
+| 0.2 | 2026-10-31 16:38 | CI pertama pada PR | agent | FAIL | tidak | audit gate: drizzle-orm + zod `high` |
+| 0.3 | 2026-10-31 16:5x | Naik taraf drizzle-orm 0.45.4, drizzle-kit 0.31.11, zod 4.6.7 | agent | PASS | tidak | ujian tempatan hijau selepas penyesuaian |
+| 0.4 | 2026-10-31 16:5x | CI kedua pada PR #1 (`3d375892`) | agent | PASS | tidak | semua gate lulus |
+| 0.5 | 2026-10-31 | Token GitHub/Neon/Vercel disemak | agent | BLOCKED | tidak | ketiga-tiga masih aktif → PROD-1 belum |
