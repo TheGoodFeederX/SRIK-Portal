@@ -107,3 +107,6 @@ v1.route('/', academicRoutes);
 v1.route('/', attendanceRoutes);
 
 app.route('/api/v1', v1);
+
+/** Bundles the whole API into its own file so Vercel never re-types or re-resolves it. */
+export type App = typeof app;

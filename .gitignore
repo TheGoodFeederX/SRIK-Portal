@@ -9,3 +9,5 @@ dist
 coverage
 *.tsbuildinfo
 dev.db
+
+api-dist
