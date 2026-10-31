@@ -1,6 +1,6 @@
 import { scryptSync, randomBytes } from 'node:crypto';
 import { sql } from 'drizzle-orm';
-import { createDb } from './index.ts';
+import { createDb } from './index.js';
 
 const db = createDb();
 

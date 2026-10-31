@@ -1,11 +1,5 @@
 {
   "extends": "../shared/tsconfig.json",
-  "include": [
-    "src"
-  ],
-  "compilerOptions": {
-    "types": [
-      "node"
-    ]
-  }
+  "compilerOptions": { "types": ["node"] },
+  "include": ["src"]
 }
