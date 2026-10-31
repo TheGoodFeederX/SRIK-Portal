@@ -24,8 +24,8 @@ test('malformed payloads are rejected', () => {
 
 test('token is read from bearer header first, then the managed auth cookie', () => {
   assert.equal(readAuthToken({ authorization: 'Bearer abc' }), 'abc');
-  assert.equal(readAuthToken({ cookie: 'better-auth.session_token=xyz; other=1' }), 'xyz');
-  assert.equal(readAuthToken({ cookie: '__Secure-better-auth.session_token=sec' }), 'sec');
+  assert.equal(readAuthToken({ cookie: '__Secure-neon-auth.session_token=xyz; other=1' }), 'xyz');
+  assert.equal(readAuthToken({ cookie: '__Secure-neon-auth.session_token=sec' }), 'sec');
   assert.equal(readAuthToken({ cookie: 'unrelated=1' }), null);
   assert.equal(readAuthToken({}), null);
 });

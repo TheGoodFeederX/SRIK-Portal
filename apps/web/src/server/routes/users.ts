@@ -7,11 +7,9 @@ import { normalizeEmail, type Role } from '@srik/shared';
 import { requirePermission, requireUser } from '../auth/session.ts';
 import { idParam, parse } from '../app.ts';
 import { writeAudit } from './audit.ts';
+import { activeAdminCount, invitationExpiry } from '../invitation-policy.ts';
 import type { AppEnv } from '../types.ts';
 
-/** Invitation lifetime (spec §64). One constant, never duplicated in the frontend. */
-export const INVITATION_TTL_HOURS = 72;
-export const invitationExpiry = (now = new Date()) => new Date(now.getTime() + INVITATION_TTL_HOURS * 3_600_000);
 
 const inviteInput = z.object({
   email: z.string().trim().email().max(255),
@@ -281,13 +279,5 @@ async function assertNotLastAdmin(db: AppEnv['Variables']['db'], profileId: stri
   }
 }
 
-/** Used by tests and the onboarding route: how many ACTIVE admins exist. */
-export async function activeAdminCount(db: AppEnv['Variables']['db']): Promise<number> {
-  const [row] = await db
-    .select({ total: count() })
-    .from(userRoles)
-    .innerJoin(profiles, eq(profiles.id, userRoles.profileId))
-    .where(and(eq(userRoles.role, 'ADMIN'), eq(profiles.status, 'ACTIVE')));
-  return Number(row?.total ?? 0);
-}
+
 

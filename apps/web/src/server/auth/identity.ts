@@ -11,14 +11,20 @@ export type IdentityResult =
   | { kind: 'invalid' }
   | { kind: 'ok'; identity: AuthIdentity };
 
-export const NEON_AUTH_COOKIE = 'better-auth.session_token';
+// Managed Auth sets `__Secure-neon-auth.session_token`; keep the plain variants for http/dev.
+export const NEON_AUTH_COOKIES = [
+  '__Secure-neon-auth.session_token',
+  'neon-auth.session_token',
+  '__Secure-better-auth.session_token',
+  'better-auth.session_token',
+];
 
 export function readAuthToken(headers: { cookie?: string; authorization?: string }): string | null {
   const bearer = headers.authorization?.replace(/^Bearer\s+/i, '').trim();
   if (bearer) return bearer;
   const cookie = headers.cookie ?? '';
   // Managed auth may prefix the cookie with __Secure- on https.
-  for (const name of [NEON_AUTH_COOKIE, `__Secure-${NEON_AUTH_COOKIE}`]) {
+  for (const name of NEON_AUTH_COOKIES) {
     const match = cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
     if (match?.[1]) return decodeURIComponent(match[1]);
   }
@@ -52,7 +58,8 @@ export async function verifyIdentity(
   try {
     res = await doFetch(`${baseUrl.replace(/\/$/, '')}/get-session`, {
       method: 'GET',
-      headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
+      // Better Auth reads the session token from its cookie, not from a bearer header.
+      headers: { cookie: `__Secure-neon-auth.session_token=${encodeURIComponent(token)}`, accept: 'application/json' },
       signal: AbortSignal.timeout(8000),
     });
   } catch {
