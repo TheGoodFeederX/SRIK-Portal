@@ -3,8 +3,10 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 import { createDb, type Db } from '@srik/db';
-import { loadSession, SESSION_COOKIE } from './auth/session.ts';
-import { login, logout, me } from './routes/auth.ts';
+import { loadApplicationUser } from './auth/session.ts';
+import { me } from './routes/auth.ts';
+import { onboardingRoutes } from './routes/onboarding.ts';
+import { userRoutes } from './routes/users.ts';
 import { auditLogRoutes } from './routes/audit.ts';
 import { metaRoutes } from './routes/meta.ts';
 import { staffRoutes } from './routes/staff.ts';
@@ -52,14 +54,15 @@ app.use('*', (c, next) => {
   return next();
 });
 
-app.use('*', loadSession);
+app.use('*', loadApplicationUser);
 
 app.onError((err, c) => {
   const requestId = c.var.requestId ?? randomUUID();
   if (err instanceof HTTPException) {
-    const codes: Record<number, string> = { 400: 'VALIDATION', 401: 'UNAUTHORIZED', 403: 'FORBIDDEN', 404: 'NOT_FOUND', 409: 'CONFLICT' };
-    const code = codes[err.status] ?? 'ERROR';
-    const cause = err.cause as { fieldErrors?: unknown } | undefined;
+    const codes: Record<number, string> = { 400: 'VALIDATION', 401: 'AUTH_REQUIRED', 403: 'FORBIDDEN', 404: 'NOT_FOUND', 409: 'CONFLICT' };
+    const cause = err.cause as { code?: string; fieldErrors?: unknown } | undefined;
+    // Routes may attach a stable application code (spec §93); otherwise fall back by status.
+    const code = cause?.code ?? codes[err.status] ?? 'ERROR';
     return c.json({ error: { code, message: err.message || code, details: cause?.fieldErrors ?? null }, requestId }, err.status);
   }
   // Postgres unique/foreign-key violations become a clean 409 instead of a 500.
@@ -104,9 +107,9 @@ export function idParam(c: { req: { param: (k: string) => string | undefined } }
 
 const v1 = new Hono<AppEnv>();
 v1.get('/health', (c) => c.json({ data: { status: 'ok' }, requestId: c.var.requestId }));
-v1.route('/auth', login);
 v1.route('/auth', me);
-v1.route('/auth', logout);
+v1.route('/users', userRoutes);
+v1.route('/onboarding', onboardingRoutes);
 v1.route('/audit-log', auditLogRoutes);
 v1.route('/meta', metaRoutes);
 v1.route('/staff', staffRoutes);

@@ -86,7 +86,7 @@ attendanceRoutes.post('/attendance/students', requirePermission('attendance.stud
       attendanceDate: input.attendanceDate,
       status: r.status,
       reason: r.reason ?? null,
-      recordedBy: user.id,
+      recordedBy: user.profileId,
     }));
   if (!rows.length) throw new HTTPException(400, { message: 'Tiada rekod sah.' });
 
@@ -103,7 +103,7 @@ attendanceRoutes.post('/attendance/students', requirePermission('attendance.stud
       },
     });
   await writeAudit(c.var.db, {
-    actorId: user.id,
+    actorId: user.profileId,
     action: 'attendance.student.take',
     resourceType: 'student_attendance',
     resourceId: `${input.classId}:${input.attendanceDate}`,

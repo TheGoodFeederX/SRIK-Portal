@@ -22,7 +22,7 @@ type List<T> = { data: T[]; meta: { total: number } };
 
 export function StaffPage() {
   const { t } = useI18n();
-  const { session } = useAuth();
+  const { user: session } = useAuth();
   const canWrite = session?.permissions.includes('staff.write') ?? false;
   const [q, setQ] = useState('');
   const [showForm, setShowForm] = useState(false);
