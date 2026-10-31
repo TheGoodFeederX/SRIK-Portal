@@ -1,6 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { handle } from 'hono/vercel';
-import { app } from '../api-dist/app.js';
 
 // Node runtime (explicit handler types pin nodeVersion): scrypt + postgres need Node APIs.
-export default handle(app) as unknown as (req: VercelRequest, res: VercelResponse) => Promise<void>;
+// The Hono app is pre-bundled at build time; the dynamic import keeps any module-load cost
+// inside the request handler instead of the (fragile) function bootstrap.
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const [{ handle }, { app }] = await Promise.all([import('hono/vercel'), import('../api-dist/app.js')]);
+  return handle(app)(req, res);
+}
