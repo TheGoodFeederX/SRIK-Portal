@@ -1,0 +1,105 @@
+# SMOKE_TEST — v1.1-PROD
+
+> Dijalankan sejurus selepas deploy production (PROD-8). Status: `PASS` / `FAIL` / `BLOCKED`.
+> **Pemilik smoke:** agent (bukti perintah) + pemilik (login & e-mel).
+
+**Base URL:** `https://srik-portal.vercel.app`
+
+---
+
+## 1. Asas (§34)
+
+| # | Semakan | Perintah | Jangkaan | Status |
+|---|---|---|---|---|
+| 1.1 | Health | `GET /api/v1/health` | 200 `{"data":{"status":"ok"}}` | ☐ |
+| 1.2 | Login page | `GET /login` | 200 | ☐ |
+| 1.3 | Shell | `GET /app` | 200 (redirect ke `/login` tanpa sesi) | ☐ |
+
+## 2. Admin authentication (§35)
+
+| # | Semakan | Jangkaan | Status |
+|---|---|---|---|
+| 2.1 | Log masuk admin production | 200 + cookie `__Secure-neon-auth.session_token` | ☐ |
+| 2.2 | `GET /api/v1/auth/session` | `state=authenticated-active`, `roles=["ADMIN"]` | ☐ |
+| 2.3 | Muat semula `/app` | sesi kekal | ☐ |
+| 2.4 | Logout | 200; `GET /api/v1/students` → 401 | ☐ |
+
+## 3. Admin functional (§36)
+
+| # | Skrin | API | Status |
+|---|---|---|---|
+| 3.1 | `/app/administration/users` | `GET /api/v1/users` → 200 | ☐ |
+| 3.2 | `/app/administration/staff` | `GET /api/v1/staff` → 200 | ☐ |
+| 3.3 | `/app/administration/audit-log` | `GET /api/v1/audit-log` → 200 | ☐ |
+| 3.4 | `/app/academic/classes` | `GET /api/v1/classes` → 200 | ☐ |
+| 3.5 | `/app/hem/students` | `GET /api/v1/students` → 200 | ☐ |
+| 3.6 | `/app/hem/attendance` | `GET /api/v1/attendance/students` → 200 | ☐ |
+
+## 4. Invitation & onboarding (§37)
+
+| # | Langkah | Jangkaan | Status |
+|---|---|---|---|
+| 4.1 | ADMIN cipta staff ujian | 201 | ☐ |
+| 4.2 | ADMIN jemput guru | 201, profil `INVITED` | ☐ |
+| 4.3 | Guru terima e-mel / tetapkan kata laluan | e-mel diterima | ☐ |
+| 4.4 | Guru log masuk + `/onboarding` | `invitation-pending` → aktifkan | ☐ |
+| 4.5 | Profil `ACTIVE`, role `TEACHER` | `GET /users` menunjukkan ACTIVE/TEACHER | ☐ |
+| 4.6 | Audit `USER_INVITED`, `USER_LINKED_AUTH` | wujud dalam `/audit-log` | ☐ |
+
+## 5. Teacher authorization & record scope (§38, §48) — **release blocker**
+
+| # | Semakan | Jangkaan | Status |
+|---|---|---|---|
+| 5.1 | Nav guru | tiada Pengguna, tiada Log Audit | ☐ |
+| 5.2 | `GET /api/v1/users` sebagai guru | 403 | ☐ |
+| 5.3 | `POST /api/v1/classes` sebagai guru | 403 (`academic.class.manage`) | ☐ |
+| 5.4 | Murid kelas sendiri | 200, senarai terhad | ☐ |
+| 5.5 | Murid kelas lain | 403 | ☐ |
+| 5.6 | Rekod kehadiran kelas sendiri | 200 | ☐ |
+| 5.7 | Rekod kehadiran kelas lain | 403 | ☐ |
+
+## 6. Negative auth (§39, §40)
+
+| # | Semakan | Jangkaan | Status |
+|---|---|---|---|
+| 6.1 | `GET /api/v1/students` tanpa sesi | 401 `AUTH_REQUIRED` | ☐ |
+| 6.2 | Identiti tanpa profil | 403 `APP_PROFILE_NOT_LINKED` | ☐ |
+| 6.3 | Profil INVITED | 403 `APP_ACCOUNT_INVITED` | ☐ |
+| 6.4 | Profil SUSPENDED | 403 `APP_ACCOUNT_SUSPENDED` | ☐ |
+| 6.5 | Profil DISABLED | 403 `APP_ACCOUNT_DISABLED` | ☐ |
+| 6.6 | Profil tanpa role | 403 `APP_ROLE_NOT_ASSIGNED` | ☐ |
+| 6.7 | `POST /api/v1/auth/login` | **404** | ☐ |
+
+## 7. Session, reset, rate limit (§41–§43)
+
+| # | Semakan | Jangkaan | Status |
+|---|---|---|---|
+| 7.1 | Login → reload → API → logout → API | 200 … 200 … 401 | ☐ |
+| 7.2 | Minta reset kata laluan | 200, e-mel diterima | ☐ |
+| 7.3 | Kata laluan lama ditolak selepas reset | 401 | ☐ |
+| 7.4 | Kata laluan baharu diterima | 200 | ☐ |
+| 7.5 | Penggunaan biasa tidak dihadkan | tiada 429 | ☐ |
+| 7.6 | Burst terkawal `/users/*` | 429 selepas had | ☐ |
+
+## 8. Audit, log, 404, akademik (§44–§47)
+
+| # | Semakan | Jangkaan | Status |
+|---|---|---|---|
+| 8.1 | Audit event pengguna | `USER_*` muncul | ☐ |
+| 8.2 | Tiada token/kata laluan dalam log | lulus | ☐ |
+| 8.3 | Ralat pelayan | `requestId`, tiada stack/SQL kepada klien | ☐ |
+| 8.4 | `/app/not-a-real-route` | halaman 404, bukan skeleton | ☐ |
+| 8.5 | Permission akademik | `academic.*.read` (bukan `student.read`) | ☐ |
+
+---
+
+## Ringkasan
+
+```text
+Jumlah semakan : 38
+PASS           : —
+FAIL           : —
+BLOCKED        : semua (menunggu kelulusan pemilik)
+```
+
+Kriteria kejayaan penuh: §49 spec (`RELEASE_PLAN.md` §2 menunjukkan gate masih GAGAL).

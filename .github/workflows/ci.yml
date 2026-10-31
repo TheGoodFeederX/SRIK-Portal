@@ -3,7 +3,9 @@ name: CI
 on:
   push:
     branches: [main]
+  # Feature branches and PRs are verified too, so the cutover PR has a green CI run.
   pull_request:
+  workflow_dispatch:
 
 jobs:
   verify:
@@ -35,9 +37,4 @@ jobs:
           pnpm audit --audit-level=high --prod --json > audit.json || true
           node scripts/audit-gate.mjs
       - name: No server secrets in the client bundle
-        run: |
-          if grep -rIlE "npg_|napi_|secret_server_key|NEON_AUTH_BASE_URL" apps/web/dist; then
-            echo "::error::Server secret or server-only env leaked into the client bundle"
-            exit 1
-          fi
-          echo "client bundle clean"
+        run: ./scripts/bundle-secret-gate.sh apps/web/dist
