@@ -21,7 +21,7 @@ jobs:
       - name: Lint
         run: pnpm lint
       - name: Typecheck
-        run: pnpm typecheck
+        run: pnpm typecheck && pnpm --filter @srik/web api:typecheck
       - name: Unit tests
         run: pnpm test
       - name: Build
