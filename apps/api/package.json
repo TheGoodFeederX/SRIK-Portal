@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "node --watch --experimental-strip-types src/server.ts",
-    "build": "mkdir -p dist && node -e \"require('fs').writeFileSync('dist/index.html','SRIK API')\"",
+    "build": "mkdir -p dist && node -e \"require('fs').writeFileSync('dist/.keep','')\"",
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types src/*.test.ts"
   },
