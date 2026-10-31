@@ -69,7 +69,15 @@ app.onError((err, c) => {
     return c.json({ error: { code: 'CONFLICT', message, details: null }, requestId }, 409);
   }
   // Never leak stack traces or SQL to the client.
-  console.error(JSON.stringify({ level: 'error', requestId, route: c.req.path, message: (err as Error).message }));
+  console.error(
+    JSON.stringify({
+      level: 'error',
+      requestId,
+      route: c.req.path,
+      message: (err as Error).message,
+      code: (err as { code?: string }).code ?? null,
+    }),
+  );
   return c.json({ error: { code: 'INTERNAL', message: 'Ralat pelayan.', details: null }, requestId }, 500);
 });
 
