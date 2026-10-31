@@ -1,0 +1,16 @@
+{
+  "name": "srik-portal",
+  "private": true,
+  "packageManager": "pnpm@10.18.3",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "db:generate": "pnpm --filter @srik/db generate",
+    "db:migrate": "pnpm --filter @srik/db migrate",
+    "db:seed": "pnpm --filter @srik/db seed"
+  },
+  "engines": { "node": ">=22" }
+}

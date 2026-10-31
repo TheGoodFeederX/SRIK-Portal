@@ -1,0 +1,28 @@
+{
+  "name": "@srik/api",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./src/app.ts",
+  "exports": {
+    ".": "./src/app.ts"
+  },
+  "scripts": {
+    "dev": "node --watch --experimental-strip-types src/server.ts",
+    "build": "node -e \"require('fs').mkdirSync('dist',{recursive:true})\"",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --experimental-strip-types src/*.test.ts"
+  },
+  "dependencies": {
+    "@srik/db": "workspace:*",
+    "@srik/shared": "workspace:*",
+    "hono": "^4.6.14",
+    "zod": "^3.24.1",
+    "drizzle-orm": "^0.38.3"
+  },
+  "devDependencies": {
+    "@vercel/node": "^5.1.0",
+    "typescript": "^5.6.3",
+    "@hono/node-server": "^1.13.7",
+    "@types/node": "^22.10.2"
+  }
+}
