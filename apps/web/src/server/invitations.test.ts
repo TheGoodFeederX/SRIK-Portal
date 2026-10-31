@@ -27,7 +27,9 @@ run('only one PENDING invitation per normalized email is allowed', async () => {
   await db.insert(accountInvitations).values({ email, profileId: profile!.id, intendedRole: 'TEACHER', invitedBy: profile!.id, expiresAt: invitationExpiry() });
   await assert.rejects(
     db.insert(accountInvitations).values({ email, profileId: profile!.id, intendedRole: 'TEACHER', invitedBy: profile!.id, expiresAt: invitationExpiry() }),
-    /duplicate key|unique/i,
+    // drizzle 0.45 wraps driver errors; match the wrapped message or the cause.
+    (err: Error & { cause?: { code?: string } }) =>
+      /duplicate key|unique/i.test(err.message) || err.cause?.code === '23505',
   );
 });
 
@@ -47,7 +49,8 @@ run('one auth identity cannot be linked to two profiles', async () => {
   await db.insert(profiles).values({ email: emailA, displayName: 'A', status: 'ACTIVE', authUserId });
   await assert.rejects(
     db.insert(profiles).values({ email: emailB, displayName: 'B', status: 'ACTIVE', authUserId }),
-    /duplicate key|unique/i,
+    (err: Error & { cause?: { code?: string } }) =>
+      /duplicate key|unique/i.test(err.message) || err.cause?.code === '23505',
   );
 });
 
@@ -65,5 +68,6 @@ run('email normalization is stable before comparison', () => {
 });
 
 after(async () => {
-  // createDb owns its pool; process exit by the test runner reclaims it.
+  // Close the pool so the runner can finish instead of hanging on open sockets.
+  await db?.$client?.end({ timeout: 1 }).catch(() => undefined);
 });

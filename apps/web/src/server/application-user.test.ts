@@ -71,5 +71,6 @@ run('ACTIVE TEACHER resolves with teacher permissions only', async () => {
 });
 
 after(async () => {
-  // createDb owns its pool; tests are short-lived processes so the runner exit reclaims it.
+  // Close the pool so the runner can finish instead of hanging on open sockets.
+  await db?.$client?.end({ timeout: 1 }).catch(() => undefined);
 });
