@@ -43,6 +43,13 @@
       "when": 1793508405549,
       "tag": "0005_timetable_entries_v13",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793511955924,
+      "tag": "0006_exams_v14",
+      "breakpoints": true
     }
   ]
 }

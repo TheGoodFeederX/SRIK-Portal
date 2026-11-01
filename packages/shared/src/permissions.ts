@@ -24,18 +24,18 @@ export const PERMISSIONS = [
   'academic.assignment.manage',
   'timetable.read',
   'timetable.manage',
-  'system.user.manage',
-  'system.audit.read',
-] as const;
-
-export const RESERVED_PERMISSIONS = [
   'exam.read',
   'exam.manage',
   'exam.marks.write',
   'exam.marks.review',
   'exam.marks.approve',
   'exam.publish',
+  'system.user.manage',
+  'system.audit.read',
 ] as const;
+
+// Declared for later phases; granted to nobody yet.
+export const RESERVED_PERMISSIONS = [] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
 export type ReservedPermission = (typeof RESERVED_PERMISSIONS)[number];
@@ -53,6 +53,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'academic.subject.read',
     'academic.assignment.read',
     'timetable.read',
+    'exam.read',
+    'exam.marks.write',
   ],
 };
 

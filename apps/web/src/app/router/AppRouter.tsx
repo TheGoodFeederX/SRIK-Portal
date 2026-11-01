@@ -20,6 +20,9 @@ import { AssignmentsPage } from '@/features/academic/AssignmentsPage';
 import { EnrollmentsPage } from '@/features/academic/EnrollmentsPage';
 import { TimetablePage } from '@/features/academic/TimetablePage';
 import { MyTimetablePage } from '@/features/academic/MyTimetablePage';
+import { ExamsPage } from '@/features/academic/ExamsPage';
+import { ExamDetailPage } from '@/features/academic/ExamDetailPage';
+import { MarkEntryPage } from '@/features/academic/MarkEntryPage';
 import { PlaceholderPage } from '@/components/layout/PlaceholderPage';
 import { NotFoundPage } from '@/components/layout/NotFoundPage';
 
@@ -65,6 +68,9 @@ export function AppRouter() {
         <Route path="academic/enrollments" element={<EnrollmentsPage />} />
         <Route path="academic/timetable" element={<TimetablePage />} />
         <Route path="academic/timetable/me" element={<MyTimetablePage />} />
+        <Route path="academic/exams" element={<ExamsPage />} />
+        <Route path="academic/exams/:id" element={<ExamDetailPage />} />
+        <Route path="academic/exams/:id/marks/:examSubjectId" element={<MarkEntryPage />} />
         <Route path="hem/students" element={<StudentsPage />} />
         <Route path="hem/attendance" element={<AttendancePage />} />
         <Route path=":portfolio" element={<PortfolioLandingPage />} />
