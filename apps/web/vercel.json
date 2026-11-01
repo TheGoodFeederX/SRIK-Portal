@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/neonauth/:path*",
-      "destination": "https://ep-dry-sunset-b3scjaeb.neonauth.c-4.ap-southeast-1.aws.neon.tech/neondb/auth/:path*"
+      "destination": "/api/neonauth?p=:path*"
     },
     {
       "source": "/api/v1/:path*",
