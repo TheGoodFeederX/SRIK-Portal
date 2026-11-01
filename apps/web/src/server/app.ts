@@ -3,14 +3,17 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 import { createDb, type Db } from '@srik/db';
-import { loadSession, SESSION_COOKIE } from './auth/session.ts';
-import { login, logout, me } from './routes/auth.ts';
+import { loadApplicationUser } from './auth/session.ts';
+import { me } from './routes/auth.ts';
+import { onboardingRoutes } from './routes/onboarding.ts';
+import { userRoutes } from './routes/users.ts';
 import { auditLogRoutes } from './routes/audit.ts';
 import { metaRoutes } from './routes/meta.ts';
 import { staffRoutes } from './routes/staff.ts';
 import { studentRoutes } from './routes/students.ts';
 import { academicRoutes } from './routes/academic.ts';
 import { attendanceRoutes } from './routes/attendance.ts';
+import { rateLimit } from './rate-limit.ts';
 import type { AppEnv } from './types.ts';
 
 // Lazily created so contract tests (no DB) can import the app. Routes that touch data require DATABASE_URL.
@@ -52,14 +55,25 @@ app.use('*', (c, next) => {
   return next();
 });
 
-app.use('*', loadSession);
+// Security headers (spec §56). CSP is intentionally absent here: the app shell sets it at the
+// hosting layer after reviewing Managed Auth origins (docs/security/AUTH_SECURITY.md).
+app.use('*', async (c, next) => {
+  await next();
+  c.header('X-Content-Type-Options', 'nosniff');
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  c.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  c.header('X-Frame-Options', 'DENY');
+});
+
+app.use('*', loadApplicationUser);
 
 app.onError((err, c) => {
   const requestId = c.var.requestId ?? randomUUID();
   if (err instanceof HTTPException) {
-    const codes: Record<number, string> = { 400: 'VALIDATION', 401: 'UNAUTHORIZED', 403: 'FORBIDDEN', 404: 'NOT_FOUND', 409: 'CONFLICT' };
-    const code = codes[err.status] ?? 'ERROR';
-    const cause = err.cause as { fieldErrors?: unknown } | undefined;
+    const codes: Record<number, string> = { 400: 'VALIDATION', 401: 'AUTH_REQUIRED', 403: 'FORBIDDEN', 404: 'NOT_FOUND', 409: 'CONFLICT' };
+    const cause = err.cause as { code?: string; fieldErrors?: unknown } | undefined;
+    // Routes may attach a stable application code (spec §93); otherwise fall back by status.
+    const code = cause?.code ?? codes[err.status] ?? 'ERROR';
     return c.json({ error: { code, message: err.message || code, details: cause?.fieldErrors ?? null }, requestId }, err.status);
   }
   // Postgres unique/foreign-key violations become a clean 409 instead of a 500.
@@ -104,9 +118,13 @@ export function idParam(c: { req: { param: (k: string) => string | undefined } }
 
 const v1 = new Hono<AppEnv>();
 v1.get('/health', (c) => c.json({ data: { status: 'ok' }, requestId: c.var.requestId }));
-v1.route('/auth', login);
 v1.route('/auth', me);
-v1.route('/auth', logout);
+// Sensitive application writes are rate limited per identity (spec §55). Password auth itself is
+// handled by Managed Auth, which owns its own attempt throttling.
+v1.use('/users/*', rateLimit({ key: 'user', limit: 30, windowMs: 60_000 }));
+v1.use('/onboarding/*', rateLimit({ key: 'link', limit: 20, windowMs: 60_000 }));
+v1.route('/users', userRoutes);
+v1.route('/onboarding', onboardingRoutes);
 v1.route('/audit-log', auditLogRoutes);
 v1.route('/meta', metaRoutes);
 v1.route('/staff', staffRoutes);

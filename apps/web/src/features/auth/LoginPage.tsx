@@ -1,29 +1,45 @@
 import { useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { GraduationCap } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiPost } from '@/lib/api';
-import { useAuth } from '@/app/providers/auth';
+import { authClient, authConfigured } from '@/lib/auth-client';
+import { useAuth, isOperational } from '@/app/providers/auth';
 import { useI18n } from '@/i18n/context';
 
 export function LoginPage() {
   const { t } = useI18n();
-  const { session, isLoading } = useAuth();
-  const qc = useQueryClient();
+  const { state, refresh } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const login = useMutation({
-    mutationFn: () => apiPost('/auth/login', { email, password }),
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ['session'] });
-      navigate((location.state as { from?: string } | null)?.from ?? '/app', { replace: true });
-    },
-  });
+  if (state !== 'loading' && isOperational(state)) return <Navigate to="/app" replace />;
 
-  if (!isLoading && session) return <Navigate to="/app" replace />;
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!authClient) {
+      setError('Konfigurasi pengesahan tidak lengkap.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const result = await authClient.signIn.email({ email, password });
+      if (result?.error) {
+        setError(t('login.failed'));
+        return;
+      }
+      await refresh();
+      const from = (location.state as { from?: string } | null)?.from;
+      navigate(from && from.startsWith('/app') ? from : '/app', { replace: true });
+    } catch {
+      setError(t('login.failed'));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
@@ -35,17 +51,16 @@ export function LoginPage() {
             <p className="text-xs text-slate-500">{t('app.school')}</p>
           </div>
         </div>
-        <form
-          className="card space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            login.mutate();
-          }}
-        >
+        <form className="card space-y-4" onSubmit={submit}>
           <div>
             <h1 className="text-lg font-semibold">{t('login.title')}</h1>
             <p className="text-sm text-slate-600">{t('login.subtitle')}</p>
           </div>
+          {!authConfigured && (
+            <p role="alert" className="rounded bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              {t('login.notConfigured')}
+            </p>
+          )}
           <div>
             <label className="label" htmlFor="email">
               {t('login.email')}
@@ -74,14 +89,20 @@ export function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          {login.isError && (
+          {error && (
             <p role="alert" className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">
-              {t('login.failed')}
+              {error}
             </p>
           )}
-          <button className="btn-primary w-full" disabled={login.isPending}>
-            {login.isPending ? t('app.loading') : t('login.submit')}
+          <button className="btn-primary w-full" disabled={busy || !authConfigured}>
+            {busy ? t('app.loading') : t('login.submit')}
           </button>
+          <div className="flex justify-between text-sm">
+            <Link to="/lupa-kata-laluan" className="text-brand-700 hover:underline">
+              {t('login.forgot')}
+            </Link>
+          </div>
+          <p className="text-xs text-slate-500">{t('login.managedByAdmin')}</p>
         </form>
       </main>
     </div>

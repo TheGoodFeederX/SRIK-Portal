@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
   date,
@@ -37,16 +38,47 @@ export const staffAttendanceStatusEnum = pgEnum('staff_attendance_status', [
 
 // ---------- Identity & Access ----------
 
+// Application identity. authUserId bridges to neon_auth.user.id (Managed Better Auth).
+// ponytail: passwordHash is legacy Stage-A only; dropped in Migration B after cutover.
 export const profiles = pgTable('profiles', {
   id: id(),
+  authUserId: text('auth_user_id').unique(),
   email: text('email').notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
+  passwordHash: text('password_hash'),
   displayName: text('display_name').notNull(),
   phone: text('phone'),
-  status: accountStatusEnum('status').notNull().default('ACTIVE'),
+  status: accountStatusEnum('status').notNull().default('INVITED'),
   createdAt: created(),
   updatedAt: updated(),
 });
+
+export const invitationStatusEnum = pgEnum('invitation_status', ['PENDING', 'ACCEPTED', 'EXPIRED', 'CANCELLED']);
+
+// An invitation bootstraps application access, never an auth session.
+export const accountInvitations = pgTable(
+  'account_invitations',
+  {
+    id: id(),
+    email: text('email').notNull(),
+    profileId: uuid('profile_id').references(() => profiles.id, { onDelete: 'cascade' }),
+    intendedRole: roleEnum('intended_role').notNull(),
+    staffId: uuid('staff_id'),
+    invitedBy: uuid('invited_by').notNull(),
+    status: invitationStatusEnum('status').notNull().default('PENDING'),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true }),
+    cancelledAt: timestamp('cancelled_at', { withTimezone: true }),
+    createdAt: created(),
+    updatedAt: updated(),
+  },
+  (t) => [
+    // One live invitation per normalized email.
+    uniqueIndex('account_invitations_pending_email')
+      .on(t.email)
+      .where(sql`status = 'PENDING'`),
+    index('account_invitations_email_idx').on(t.email),
+  ],
+);
 
 export const userRoles = pgTable(
   'user_roles',
@@ -59,6 +91,8 @@ export const userRoles = pgTable(
   (t) => [primaryKey({ columns: [t.profileId, t.role] })],
 );
 
+// Legacy custom session table (Stage A retention). Managed Auth owns sessions in neon_auth.
+// ponytail: kept in the schema so no migration is generated; dropped in Stage B (Migration B).
 export const sessions = pgTable('sessions', {
   id: text('id').primaryKey(),
   profileId: uuid('profile_id')

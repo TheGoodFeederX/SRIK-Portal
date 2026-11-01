@@ -39,7 +39,7 @@ const assignmentInput = z.object({
 
 export const academicRoutes = new Hono<AppEnv>();
 
-academicRoutes.get('/academic-years', requirePermission('student.read'), async (c) => {
+academicRoutes.get('/academic-years', requirePermission('academic.year.read'), async (c) => {
   const rows = await c.var.db.select().from(academicYears).orderBy(academicYears.startDate);
   return c.json({ data: rows, requestId: c.var.requestId });
 });
@@ -48,11 +48,11 @@ academicRoutes.post('/academic-years', requirePermission('academic.year.manage')
   const user = requireUser(c);
   const input = yearInput.parse(await c.req.json());
   const [row] = await c.var.db.insert(academicYears).values(input).returning();
-  await writeAudit(c.var.db, { actorId: user.id, action: 'academic_year.create', resourceType: 'academic_year', resourceId: row!.id, after: row, requestId: c.var.requestId });
+  await writeAudit(c.var.db, { actorId: user.profileId, action: 'academic_year.create', resourceType: 'academic_year', resourceId: row!.id, after: row, requestId: c.var.requestId });
   return c.json({ data: row, requestId: c.var.requestId }, 201);
 });
 
-academicRoutes.get('/classes', requirePermission('student.read'), async (c) => {
+academicRoutes.get('/classes', requirePermission('academic.class.read'), async (c) => {
   const yearId = c.req.query('academicYearId');
   const rows = await c.var.db
     .select()
@@ -65,11 +65,11 @@ academicRoutes.post('/classes', requirePermission('academic.class.manage'), asyn
   const user = requireUser(c);
   const input = classInput.parse(await c.req.json());
   const [row] = await c.var.db.insert(classes).values(input).returning();
-  await writeAudit(c.var.db, { actorId: user.id, action: 'class.create', resourceType: 'class', resourceId: row!.id, after: row, requestId: c.var.requestId });
+  await writeAudit(c.var.db, { actorId: user.profileId, action: 'class.create', resourceType: 'class', resourceId: row!.id, after: row, requestId: c.var.requestId });
   return c.json({ data: row, requestId: c.var.requestId }, 201);
 });
 
-academicRoutes.get('/subjects', requirePermission('student.read'), async (c) => {
+academicRoutes.get('/subjects', requirePermission('academic.subject.read'), async (c) => {
   const rows = await c.var.db.select().from(subjects).orderBy(subjects.code);
   return c.json({ data: rows, requestId: c.var.requestId });
 });
@@ -78,11 +78,11 @@ academicRoutes.post('/subjects', requirePermission('academic.subject.manage'), a
   const user = requireUser(c);
   const input = subjectInput.parse(await c.req.json());
   const [row] = await c.var.db.insert(subjects).values(input).returning();
-  await writeAudit(c.var.db, { actorId: user.id, action: 'subject.create', resourceType: 'subject', resourceId: row!.id, after: row, requestId: c.var.requestId });
+  await writeAudit(c.var.db, { actorId: user.profileId, action: 'subject.create', resourceType: 'subject', resourceId: row!.id, after: row, requestId: c.var.requestId });
   return c.json({ data: row, requestId: c.var.requestId }, 201);
 });
 
-academicRoutes.get('/teaching-assignments', requirePermission('student.read'), async (c) => {
+academicRoutes.get('/teaching-assignments', requirePermission('academic.assignment.read'), async (c) => {
   const teacherId = c.req.query('teacherId');
   const rows = await c.var.db
     .select()
@@ -95,6 +95,6 @@ academicRoutes.post('/teaching-assignments', requirePermission('academic.assignm
   const user = requireUser(c);
   const input = assignmentInput.parse(await c.req.json());
   const [row] = await c.var.db.insert(teachingAssignments).values(input).returning();
-  await writeAudit(c.var.db, { actorId: user.id, action: 'teaching_assignment.create', resourceType: 'teaching_assignment', resourceId: row!.id, after: row, requestId: c.var.requestId });
+  await writeAudit(c.var.db, { actorId: user.profileId, action: 'teaching_assignment.create', resourceType: 'teaching_assignment', resourceId: row!.id, after: row, requestId: c.var.requestId });
   return c.json({ data: row, requestId: c.var.requestId }, 201);
 });

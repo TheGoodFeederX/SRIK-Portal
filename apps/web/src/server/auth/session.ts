@@ -1,73 +1,59 @@
 import type { Context, Next } from 'hono';
 import { HTTPException } from 'hono/http-exception';
-import { eq } from 'drizzle-orm';
-import { profiles, sessions, userRoles } from '@srik/db';
-import { permissionsForRoles, type Permission, type Role } from '@srik/shared';
+import type { Permission } from '@srik/shared';
 import type { AppEnv } from '../types.ts';
-import { hashToken } from './password.ts';
+import { verifyIdentity } from './identity.ts';
+import { resolveApplicationUser } from './application-user.ts';
 
-export const SESSION_COOKIE = 'srik_session';
-const SESSION_DAYS = 14;
+/**
+ * Loads Managed Auth identity → application user. Never throws:
+ * `c.var.denial` carries why an authenticated identity has no application access.
+ * ponytail: no fallback to the legacy srik_session cookie (spec §21 forbids dual auth).
+ */
+export const loadApplicationUser = async (c: Context<AppEnv>, next: Next) => {
+  c.set('identity', null);
+  c.set('denial', null);
+  c.set('user', null);
 
-export async function createSession(db: AppEnv['Variables']['db'], profileId: string, token: string) {
-  const expiresAt = new Date(Date.now() + SESSION_DAYS * 86_400_000);
-  await db.insert(sessions).values({ id: hashToken(token), profileId, expiresAt });
-  return expiresAt;
-}
-
-export async function destroySession(db: AppEnv['Variables']['db'], token: string) {
-  await db.delete(sessions).where(eq(sessions.id, hashToken(token)));
-}
-
-export function readToken(c: Context<AppEnv>): string | null {
-  const cookie = c.req.header('cookie') ?? '';
-  const match = cookie.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]+)`));
-  if (match?.[1]) return decodeURIComponent(match[1]);
-  const bearer = c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
-  return bearer || null;
-}
-
-/** Loads the session + roles + permissions onto the context. Never throws. */
-export const loadSession = async (c: Context<AppEnv>, next: Next) => {
-  const token = readToken(c);
-  if (token && process.env.DATABASE_URL) {
-    const [row] = await c.var.db
-      .select({ profileId: profiles.id, email: profiles.email, displayName: profiles.displayName, status: profiles.status, expiresAt: sessions.expiresAt })
-      .from(sessions)
-      .innerJoin(profiles, eq(profiles.id, sessions.profileId))
-      .where(eq(sessions.id, hashToken(token)))
-      .limit(1);
-    if (row && row.expiresAt > new Date() && row.status === 'ACTIVE') {
-      const roles = (await c.var.db.select({ role: userRoles.role }).from(userRoles).where(eq(userRoles.profileId, row.profileId))).map(
-        (r) => r.role as Role,
-      );
-      c.set('user', {
-        id: row.profileId,
-        email: row.email,
-        displayName: row.displayName,
-        roles,
-        permissions: permissionsForRoles(roles),
-      });
-    }
+  if (!process.env.NEON_AUTH_BASE_URL) {
+    await next();
+    return;
   }
+
+  const result = await verifyIdentity({
+    cookie: c.req.header('cookie'),
+    authorization: c.req.header('authorization'),
+  });
+  if (result.kind !== 'ok') {
+    await next();
+    return;
+  }
+
+  c.set('identity', result.identity);
+  const lookup = await resolveApplicationUser(c.var.db, result.identity);
+  if (lookup.kind === 'ok') c.set('user', lookup.user);
+  else c.set('denial', lookup.denial);
   await next();
 };
 
 export function requireUser(c: Context<AppEnv>) {
   const user = c.var.user;
-  if (!user) throw new HTTPException(401, { message: 'Sesi tidak sah. Sila log masuk.' });
-  return user;
+  if (user) return user;
+  if (c.var.denial) {
+    throw new HTTPException(403, { message: c.var.denial.message, cause: { code: c.var.denial.code } });
+  }
+  throw new HTTPException(401, { message: 'Sesi tidak sah. Sila log masuk.', cause: { code: 'AUTH_REQUIRED' } });
 }
 
 /**
  * Permission gate. Returns middleware so routes stay one line.
- * Scope (which records) is a separate check inside each service.
+ * Record scope (which records) is a separate check inside each service.
  */
 export function requirePermission(permission: Permission) {
   return async (c: Context<AppEnv>, next: Next) => {
     const user = requireUser(c);
     if (!user.permissions.includes(permission)) {
-      throw new HTTPException(403, { message: 'Anda tidak mempunyai akses.' });
+      throw new HTTPException(403, { message: 'Anda tidak mempunyai akses.', cause: { code: 'FORBIDDEN' } });
     }
     await next();
   };

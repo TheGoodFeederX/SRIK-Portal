@@ -23,8 +23,14 @@ function apiDevServer(): Plugin {
             req.on('error', reject);
           });
           const url = new URL(req.url ?? '/', 'http://localhost');
+          // `server.ssrLoadModule` runs the API outside Vite's env loader, so the server-only
+          // auth values would be missing. They come from the same var the client uses.
+          process.env.NEON_AUTH_BASE_URL ??= process.env.VITE_NEON_AUTH_URL ?? server.config.env.VITE_NEON_AUTH_URL;
           const headers = new Headers();
-          for (const [k, v] of Object.entries(req.headers)) if (typeof v === 'string') headers.set(k, v);
+          for (const [k, v] of Object.entries(req.headers)) {
+            if (typeof v === 'string') headers.set(k, v);
+            else if (Array.isArray(v)) headers.set(k, v.join('; '));
+          }
           const request = new Request(`http://localhost:5173/api/v1${url.pathname.replace(/^\/api\/v1/, '')}${url.search}`, {
             method: req.method,
             headers,

@@ -8,36 +8,37 @@
     "build": "vite build && vite build -c vite.api.config.ts",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --experimental-strip-types src/server/*.test.ts src/app/navigation/*.test.ts",
+    "test": "node --test --experimental-strip-types src/server/*.test.ts src/server/auth/*.test.ts src/app/navigation/*.test.ts",
     "lint": "tsc --noEmit",
     "api:dev": "node --watch --experimental-strip-types src/server/server.ts",
     "api:typecheck": "vite build -c vite.api.config.ts && tsc -p tsconfig.server.json"
   },
   "dependencies": {
+    "@neon/neon-js": "^0.10.2",
+    "@srik/db": "workspace:*",
     "@srik/shared": "workspace:*",
     "@tanstack/react-query": "^5.62.7",
     "clsx": "^2.1.1",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.6.14",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.1.1",
     "tailwind-merge": "^2.5.5",
-    "@srik/db": "workspace:*",
-    "hono": "^4.6.14",
-    "zod": "^3.24.1",
-    "drizzle-orm": "^0.38.3"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@hono/node-server": "^1.13.7",
     "@types/react": "^18.3.17",
     "@types/react-dom": "^18.3.5",
+    "@vercel/node": "^5.1.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.6.3",
     "vite": "^6.0.5",
-    "vite-plugin-pwa": "^0.21.1",
-    "@hono/node-server": "^1.13.7",
-    "@vercel/node": "^5.1.0"
+    "vite-plugin-pwa": "^0.21.1"
   }
 }

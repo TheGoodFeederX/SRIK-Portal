@@ -9,7 +9,7 @@ import { cn } from '@/lib/cn';
 
 export function AppShell() {
   const { t, locale, setLocale } = useI18n();
-  const { session, logout } = useAuth();
+  const { user: session, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const crumbs = buildCrumbs(location.pathname).map((c) => ({ path: c.path, label: crumbLabel(c.label, t) }));
@@ -105,7 +105,7 @@ export function AppShell() {
               <option value="en">EN</option>
             </select>
             <span className="text-sm text-slate-700">{session?.displayName}</span>
-            <button className="btn-ghost" onClick={logout}>
+            <button className="btn-ghost" onClick={() => void signOut()}>
               <LogOut className="h-4 w-4" />
               {t('app.logout')}
             </button>

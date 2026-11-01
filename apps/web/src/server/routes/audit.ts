@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { desc, eq, inArray } from 'drizzle-orm';
 import { auditLog, classes, enrollments, staff, teachingAssignments } from '@srik/db';
-import type { AppEnv, SessionUser } from '../types.ts';
+import type { AppEnv, ApplicationUser } from '../types.ts';
 import { requirePermission } from '../auth/session.ts';
 
 type Db = AppEnv['Variables']['db'];
@@ -44,9 +44,9 @@ export const listQuery = z.object({
  * Record scope for TEACHER users: classes they teach (teaching assignment) or class-teach (homeroom).
  * ADMIN is unrestricted. Returns null = unrestricted, [] = no records visible.
  */
-export async function scopedClassIds(db: Db, user: SessionUser): Promise<string[] | null> {
+export async function scopedClassIds(db: Db, user: ApplicationUser): Promise<string[] | null> {
   if (user.roles.includes('ADMIN')) return null;
-  const [staffRow] = await db.select({ id: staff.id }).from(staff).where(eq(staff.profileId, user.id)).limit(1);
+  const [staffRow] = await db.select({ id: staff.id }).from(staff).where(eq(staff.profileId, user.profileId)).limit(1);
   if (!staffRow) return [];
   const teaching = await db
     .select({ classId: teachingAssignments.classId })
@@ -57,7 +57,7 @@ export async function scopedClassIds(db: Db, user: SessionUser): Promise<string[
 }
 
 /** Student ids visible to the user (null = all). Teachers: their classes' enrollments. */
-export async function scopedStudentIds(db: Db, user: SessionUser): Promise<string[] | null> {
+export async function scopedStudentIds(db: Db, user: ApplicationUser): Promise<string[] | null> {
   const classIds = await scopedClassIds(db, user);
   if (classIds === null) return null;
   if (classIds.length === 0) return [];

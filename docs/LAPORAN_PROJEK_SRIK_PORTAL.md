@@ -40,7 +40,9 @@ Emel        : admin@srik.local
 Kata laluan : SrikAdmin2026!
 ```
 
-> **Amaran keselamatan:** Kata laluan ini diketahui dalam log perbualan. Tukar segera dengan `SEED_ADMIN_PASSWORD` baharu dan jalankan semula `pnpm db:seed`, atau bina modul pengurusan pengguna (belum ada).
+> **Dikemas kini oleh Spec v1.1:** kata laluan seed custom telah dimansuhkan. Identiti admin kini
+> dikendalikan Managed Better Auth — lihat `docs/runbooks/BOOTSTRAP_ADMIN.md`. Deployment production
+> masih memakai auth legacy sehingga cutover Stage A dijalankan.
 
 ---
 
@@ -103,7 +105,7 @@ SRIK-Portal/
 | 1 | Project skeleton + CI | ✅ Siap |
 | 2 | Empat portfolio UI | ✅ Siap |
 | 3 | Database foundation | ✅ Siap |
-| 4 | Auth & authorization | ⚠️ Separa (invitation/user management belum) |
+| 4 | Auth & authorization (v1.1 Managed Auth) | ⚠️ Stage A siap pada branch dev |
 | 5 | Core master data | ⚠️ API + skrin senarai sahaja |
 | 6 | Kehadiran murid | ⚠️ API + skrin ambil kehadiran |
 | 7 | Jadual | ❌ Placeholder |

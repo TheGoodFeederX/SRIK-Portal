@@ -44,7 +44,7 @@ staffRoutes.post('/', requirePermission('staff.write'), async (c) => {
   const input = staffInput.parse(await c.req.json());
   const [row] = await c.var.db.insert(staff).values(input).returning();
   await writeAudit(c.var.db, {
-    actorId: user.id,
+    actorId: user.profileId,
     action: 'staff.create',
     resourceType: 'staff',
     resourceId: row!.id,
@@ -62,7 +62,7 @@ staffRoutes.patch('/:id', requirePermission('staff.write'), async (c) => {
   if (!before) throw new HTTPException(404, { message: 'Guru tidak dijumpai.' });
   const [row] = await c.var.db.update(staff).set({ ...input, updatedAt: new Date() }).where(eq(staff.id, id)).returning();
   await writeAudit(c.var.db, {
-    actorId: user.id,
+    actorId: user.profileId,
     action: 'staff.update',
     resourceType: 'staff',
     resourceId: id,

@@ -79,7 +79,7 @@ studentRoutes.post('/', requirePermission('student.write'), async (c) => {
   const input = studentInput.parse(await c.req.json());
   const [row] = await c.var.db.insert(students).values(input).returning();
   await writeAudit(c.var.db, {
-    actorId: user.id,
+    actorId: user.profileId,
     action: 'student.create',
     resourceType: 'student',
     resourceId: row!.id,
@@ -97,7 +97,7 @@ studentRoutes.patch('/:id', requirePermission('student.write'), async (c) => {
   if (!before) throw new HTTPException(404, { message: 'Murid tidak dijumpai.' });
   const [row] = await c.var.db.update(students).set({ ...input, updatedAt: new Date() }).where(eq(students.id, id)).returning();
   await writeAudit(c.var.db, {
-    actorId: user.id,
+    actorId: user.profileId,
     action: 'student.update',
     resourceType: 'student',
     resourceId: id,
@@ -124,7 +124,7 @@ studentRoutes.post('/:id/guardians', requirePermission('student.write'), async (
     canReceiveResults,
   });
   await writeAudit(c.var.db, {
-    actorId: user.id,
+    actorId: user.profileId,
     action: 'student.guardian.link',
     resourceType: 'student',
     resourceId: id,

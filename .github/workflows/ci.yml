@@ -3,7 +3,9 @@ name: CI
 on:
   push:
     branches: [main]
+  # Feature branches and PRs are verified too, so the cutover PR has a green CI run.
   pull_request:
+  workflow_dispatch:
 
 jobs:
   verify:
@@ -26,5 +28,13 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm --filter @srik/web build
-      - name: Dependency audit (high+)
-        run: pnpm audit --audit-level=high || true
+      # Spec v1.1 §90: critical/high must fail CI. Exceptions are listed in
+      # docs/security/AUDIT_EXCEPTIONS.md; there is no blanket `|| true`.
+      - name: Dependency audit (critical fails, production deps)
+        run: pnpm audit --audit-level=critical --prod
+      - name: Dependency audit (high must be allowlisted)
+        run: |
+          pnpm audit --audit-level=high --prod --json > audit.json || true
+          node scripts/audit-gate.mjs
+      - name: No server secrets in the client bundle
+        run: ./scripts/bundle-secret-gate.sh apps/web/dist

@@ -11,7 +11,7 @@ type Summary = { students: number; staff: number; classes: number; academicYears
 
 export function DashboardPage() {
   const { t } = useI18n();
-  const { session } = useAuth();
+  const { user: session } = useAuth();
   const { data, isLoading, isError, refetch } = useQuery({ queryKey: ['meta', 'summary'], queryFn: () => apiGet<Summary>('/meta/summary') });
 
   const cards: { key: TranslationKey; value: number | undefined }[] = [
