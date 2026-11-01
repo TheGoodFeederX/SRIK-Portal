@@ -4,10 +4,18 @@ import type { AppAuthState, AuthCode, Permission, Role } from '@srik/shared';
 import { apiGet, apiPost } from '@/lib/api';
 import { authClient } from '@/lib/auth-client';
 
-export type AppUser = { profileId: string; authUserId: string; email: string; displayName: string; roles: Role[]; permissions: Permission[] };
+export type AppUser = {
+  profileId: string;
+  authUserId: string;
+  email: string;
+  displayName: string;
+  roles: Role[];
+  permissions: Permission[];
+  mustChangePassword: boolean;
+};
 
-/** Signed-out + the explicit application states from spec §18. */
-export type AuthState = 'loading' | 'signed-out' | AppAuthState;
+/** Signed-out + the explicit application states (spec §18, R2 §10). */
+export type AuthState = 'loading' | 'signed-out' | AppAuthState | 'authenticated-password-change-required';
 
 type SessionPayload = {
   state: AuthState;
@@ -81,3 +89,6 @@ export function useAuth() {
 
 /** Only this state may enter the operational app shell (spec §57). */
 export const isOperational = (state: AuthState) => state === 'authenticated-active';
+
+/** Must change password before any operational screen (R2 §10). */
+export const mustChangePassword = (state: AuthState) => state === 'authenticated-password-change-required';

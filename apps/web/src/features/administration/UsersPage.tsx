@@ -13,6 +13,7 @@ type UserRow = {
   email: string;
   displayName: string;
   status: 'INVITED' | 'ACTIVE' | 'SUSPENDED' | 'DISABLED';
+  mustChangePassword?: boolean;
   authUserId: string | null;
   roles: string[];
   staffId: string | null;
@@ -44,11 +45,26 @@ export function UsersPage() {
     await qc.invalidateQueries({ queryKey: ['session'] });
   };
 
-  const invite = useMutation({
-    mutationFn: (body: { email: string; staffId: string | null; intendedRole: 'TEACHER' | 'ADMIN' }) => apiPost('/users/invitations', body),
-    onSuccess: async () => {
-      toast(t('users.inviteSent'));
+  const [tempPassword, setTempPassword] = useState<{ email: string; password: string } | null>(null);
+
+  const provision = useMutation({
+    mutationFn: (body: { email: string; staffId: string | null; intendedRole: 'TEACHER' | 'ADMIN' }) =>
+      apiPost<{ profileId: string; email: string; temporaryPassword: string }>('/users/provision', body),
+    onSuccess: async (data) => {
+      toast(t('users.provisioned'));
+      // Shown once, never stored or re-fetchable (R2 §8, §13).
+      setTempPassword({ email: data.email, password: data.temporaryPassword });
       setShowInvite(false);
+      await invalidate();
+    },
+    onError: (e: Error) => toast(errorMessage(e, t), 'error'),
+  });
+
+  const resetPassword = useMutation({
+    mutationFn: (id: string) => apiPost<{ profileId: string; temporaryPassword: string }>(`/users/${id}/reset-password`),
+    onSuccess: async (data) => {
+      toast(t('users.resetDone'));
+      setTempPassword({ email: users.data?.find((u) => u.profileId === data.profileId)?.email ?? '', password: data.temporaryPassword });
       await invalidate();
     },
     onError: (e: Error) => toast(errorMessage(e, t), 'error'),
@@ -89,12 +105,23 @@ export function UsersPage() {
         </button>
       </header>
 
+      {tempPassword && (
+        <div className="card border-amber-300 bg-amber-50" role="status">
+          <p className="text-sm font-medium text-amber-900">{t('users.tempPassword')} — {tempPassword.email}</p>
+          <code className="mt-2 block select-all rounded bg-white px-3 py-2 font-mono text-base">{tempPassword.password}</code>
+          <p className="mt-2 text-xs text-amber-800">{t('users.provisioned')}</p>
+          <button className="btn-ghost mt-3" onClick={() => setTempPassword(null)}>
+            {t('app.close')}
+          </button>
+        </div>
+      )}
+
       {showInvite && (
         <InviteForm
           staff={staff.data?.data ?? []}
-          submitting={invite.isPending}
           onCancel={() => setShowInvite(false)}
-          onSubmit={(values) => invite.mutate(values)}
+          submitting={provision.isPending}
+          onSubmit={(values) => provision.mutate(values)}
         />
       )}
 
@@ -122,7 +149,12 @@ export function UsersPage() {
             <tbody>
               {users.data!.map((u) => (
                 <tr key={u.profileId}>
-                  <td>{u.displayName}</td>
+                  <td>
+                    {u.displayName}
+                    {u.mustChangePassword && (
+                      <span className="ml-2 badge bg-amber-100 text-amber-900">{t('users.mustChange')}</span>
+                    )}
+                  </td>
                   <td className="text-xs">{u.email}</td>
                   <td className="text-xs">{u.staffName ?? <span className="text-slate-400">{t('users.noStaff')}</span>}</td>
                   <td>
@@ -154,6 +186,9 @@ export function UsersPage() {
                           {t('users.reactivate')}
                         </button>
                       )}
+                      <button className="btn-ghost px-2 py-1 text-xs" onClick={() => resetPassword.mutate(u.profileId)}>
+                        {t('users.resetPassword')}
+                      </button>
                       {u.status !== 'DISABLED' && (
                         <button className="btn-ghost px-2 py-1 text-xs" onClick={() => action.mutate({ path: `/users/${u.profileId}/disable` })}>
                           {t('users.disable')}
@@ -196,7 +231,7 @@ function InviteForm({
         onSubmit({ email, staffId: staffId || null, intendedRole: role });
       }}
     >
-      <h2 className="text-base font-semibold sm:col-span-2">{t('users.inviteTitle')}</h2>
+      <h2 className="text-base font-semibold sm:col-span-2">{t('users.provisionTitle')}</h2>
       <div>
         <label className="label" htmlFor="invite-staff">
           {t('users.staff')}
@@ -236,7 +271,7 @@ function InviteForm({
       </div>
       <div className="flex gap-2 sm:col-span-2">
         <button className="btn-primary" disabled={submitting}>
-          {t('users.inviteSubmit')}
+          {t('users.provisionSubmit')}
         </button>
         <button type="button" className="btn-ghost" onClick={onCancel}>
           {t('app.cancel')}

@@ -19,6 +19,7 @@ export async function resolveApplicationUser(db: Db, identity: AuthIdentity): Pr
       email: profiles.email,
       displayName: profiles.displayName,
       status: profiles.status,
+      mustChangePassword: profiles.mustChangePassword,
     })
     .from(profiles)
     .where(eq(profiles.authUserId, identity.authUserId))
@@ -89,6 +90,7 @@ export async function resolveApplicationUser(db: Db, identity: AuthIdentity): Pr
       displayName: profile.displayName,
       roles,
       permissions: permissionsForRoles(roles),
+      mustChangePassword: profile.mustChangePassword,
     },
   };
 }

@@ -16,6 +16,8 @@ export type ApplicationUser = {
   displayName: string;
   roles: Role[];
   permissions: Permission[];
+  /** True until the user replaces a temporary password (spec R2 §9). */
+  mustChangePassword: boolean;
 };
 
 /** Why an authenticated identity may not use the app (spec §50–52). */

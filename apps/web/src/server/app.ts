@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 import { createDb, type Db } from '@srik/db';
-import { loadApplicationUser } from './auth/session.ts';
+import { enforcePasswordChange, loadApplicationUser } from './auth/session.ts';
 import { me } from './routes/auth.ts';
 import { onboardingRoutes } from './routes/onboarding.ts';
 import { userRoutes } from './routes/users.ts';
@@ -66,6 +66,7 @@ app.use('*', async (c, next) => {
 });
 
 app.use('*', loadApplicationUser);
+app.use('*', enforcePasswordChange);
 
 app.onError((err, c) => {
   const requestId = c.var.requestId ?? randomUUID();

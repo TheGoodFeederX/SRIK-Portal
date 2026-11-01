@@ -8,6 +8,7 @@ import { requirePermission, requireUser } from '../auth/session.ts';
 import { idParam, parse } from '../app.ts';
 import { writeAudit } from './audit.ts';
 import { activeAdminCount, invitationExpiry } from '../invitation-policy.ts';
+import { deleteIdentity, generateTemporaryPassword, provisionIdentity, setCredentialPassword, updateIdentityEmail } from '../auth/credentials.ts';
 import type { AppEnv } from '../types.ts';
 
 
@@ -19,9 +20,174 @@ const inviteInput = z.object({
 
 const roleInput = z.object({ roles: z.array(z.enum(['ADMIN', 'TEACHER'])).max(2) });
 
+const provisionInput = z.object({
+  email: z.string().trim().email().max(255),
+  staffId: z.string().uuid().nullish(),
+  intendedRole: z.enum(['ADMIN', 'TEACHER']).default('TEACHER'),
+  displayName: z.string().trim().min(1).max(200).optional(),
+});
+
+const emailInput = z.object({ email: z.string().trim().email().max(255) });
+
 export const userRoutes = new Hono<AppEnv>();
 
 const manage = requirePermission('system.user.manage');
+
+
+/**
+ * Account provisioning (spec R2 §5): profile + auth identity + temporary password + role,
+ * all server-side and without email delivery. The temporary password is returned exactly once.
+ */
+userRoutes.post('/provision', manage, async (c) => {
+  const actor = requireUser(c);
+  const input = parse(provisionInput, await c.req.json().catch(() => ({})));
+  const email = normalizeEmail(input.email);
+  const db = c.var.db;
+
+  let staffRow: { id: string; fullName: string; profileId: string | null } | undefined;
+  if (input.staffId) {
+    [staffRow] = await db
+      .select({ id: staff.id, fullName: staff.fullName, profileId: staff.profileId })
+      .from(staff)
+      .where(eq(staff.id, input.staffId))
+      .limit(1);
+    if (!staffRow) throw new HTTPException(404, { message: 'Rekod guru tidak dijumpai.', cause: { code: 'INVALID_TEACHER' } });
+    if (staffRow.profileId) throw new HTTPException(409, { message: 'Guru ini sudah mempunyai akaun.', cause: { code: 'AUTH_ALREADY_LINKED' } });
+  }
+
+  const [existing] = await db.select({ id: profiles.id, authUserId: profiles.authUserId }).from(profiles).where(eq(profiles.email, email)).limit(1);
+  if (existing?.authUserId) {
+    throw new HTTPException(409, { message: 'Emel ini sudah mempunyai akaun aktif.', cause: { code: 'AUTH_ALREADY_LINKED' } });
+  }
+
+  const displayName = input.displayName ?? staffRow?.fullName ?? email;
+  const { authUserId, temporaryPassword } = await provisionIdentity(email, displayName);
+
+  const profileId = await db.transaction(async (tx) => {
+    let id = existing?.id;
+    if (id) {
+      await tx
+        .update(profiles)
+        .set({ authUserId, displayName, status: 'ACTIVE', mustChangePassword: true, updatedAt: new Date() })
+        .where(eq(profiles.id, id));
+    } else {
+      const [created] = await tx
+        .insert(profiles)
+        .values({ email, displayName, status: 'ACTIVE', authUserId, mustChangePassword: true })
+        .returning({ id: profiles.id });
+      id = created!.id;
+    }
+    await tx.insert(userRoles).values({ profileId: id, role: input.intendedRole }).onConflictDoNothing();
+    if (staffRow) await tx.update(staff).set({ profileId: id }).where(eq(staff.id, staffRow.id));
+    return id;
+  });
+
+  await db
+    .update(accountInvitations)
+    .set({ status: 'CANCELLED', cancelledAt: new Date(), updatedAt: new Date() })
+    .where(and(eq(accountInvitations.email, email), eq(accountInvitations.status, 'PENDING')));
+
+  await writeAudit(db, {
+    actorId: actor.profileId,
+    action: 'USER_INVITED',
+    resourceType: 'profile',
+    resourceId: profileId,
+    // Never store the temporary password.
+    after: { email, intendedRole: input.intendedRole, staffId: staffRow?.id ?? null, provisioned: true },
+    requestId: c.var.requestId,
+  });
+
+  return c.json(
+    {
+      data: { profileId, email, intendedRole: input.intendedRole, temporaryPassword, mustChangePassword: true },
+      requestId: c.var.requestId,
+    },
+    201,
+  );
+});
+
+/** Admin-driven password reset without email (spec R2 §7, §12). */
+userRoutes.post('/:id/reset-password', manage, async (c) => {
+  const actor = requireUser(c);
+  const id = idParam(c);
+  const db = c.var.db;
+  const [target] = await db
+    .select({ id: profiles.id, email: profiles.email, authUserId: profiles.authUserId, displayName: profiles.displayName })
+    .from(profiles)
+    .where(eq(profiles.id, id))
+    .limit(1);
+  if (!target) throw new HTTPException(404, { message: 'Pengguna tidak dijumpai.' });
+  if (!target.authUserId) {
+    throw new HTTPException(409, { message: 'Pengguna ini belum mempunyai identiti pengesahan.', cause: { code: 'APP_PROFILE_NOT_LINKED' } });
+  }
+
+  const temporaryPassword = generateTemporaryPassword();
+  await setCredentialPassword(target.authUserId, temporaryPassword);
+  await db.update(profiles).set({ mustChangePassword: true, updatedAt: new Date() }).where(eq(profiles.id, id));
+  await writeAudit(db, {
+    actorId: actor.profileId,
+    action: 'USER_PASSWORD_RESET',
+    resourceType: 'profile',
+    resourceId: id,
+    requestId: c.var.requestId,
+  });
+
+  return c.json({ data: { profileId: id, temporaryPassword, mustChangePassword: true }, requestId: c.var.requestId });
+});
+
+/** Alias email change (spec R2 §14). */
+userRoutes.put('/:id/email', manage, async (c) => {
+  const actor = requireUser(c);
+  const id = idParam(c);
+  const { email } = parse(emailInput, await c.req.json().catch(() => ({})));
+  const next = normalizeEmail(email);
+  const db = c.var.db;
+  const [target] = await db.select({ id: profiles.id, email: profiles.email, authUserId: profiles.authUserId }).from(profiles).where(eq(profiles.id, id)).limit(1);
+  if (!target) throw new HTTPException(404, { message: 'Pengguna tidak dijumpai.' });
+
+  const [clash] = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.email, next)).limit(1);
+  if (clash && clash.id !== id) throw new HTTPException(409, { message: 'Emel ini sudah digunakan.', cause: { code: 'CONFLICT' } });
+
+  await db.transaction(async (tx) => {
+    await tx.update(profiles).set({ email: next, updatedAt: new Date() }).where(eq(profiles.id, id));
+    if (target.authUserId) await updateIdentityEmail(target.authUserId, next);
+  });
+  await writeAudit(db, {
+    actorId: actor.profileId,
+    action: 'USER_ALIAS_EMAIL_CHANGED',
+    resourceType: 'profile',
+    resourceId: id,
+    before: { email: target.email },
+    after: { email: next },
+    requestId: c.var.requestId,
+  });
+  return c.json({ data: { profileId: id, email: next }, requestId: c.var.requestId });
+});
+
+/** Cancel provisioning: removes the identity and the unused profile. */
+userRoutes.delete('/:id', manage, async (c) => {
+  const actor = requireUser(c);
+  const id = idParam(c);
+  const db = c.var.db;
+  await assertNotLastAdmin(db, id, 'deny');
+  const [target] = await db.select({ authUserId: profiles.authUserId, email: profiles.email }).from(profiles).where(eq(profiles.id, id)).limit(1);
+  if (!target) throw new HTTPException(404, { message: 'Pengguna tidak dijumpai.' });
+  if (target.authUserId) await deleteIdentity(target.authUserId);
+  await db.transaction(async (tx) => {
+    await tx.update(staff).set({ profileId: null }).where(eq(staff.profileId, id));
+    await tx.delete(accountInvitations).where(eq(accountInvitations.profileId, id));
+    await tx.delete(profiles).where(eq(profiles.id, id));
+  });
+  await writeAudit(db, {
+    actorId: actor.profileId,
+    action: 'USER_DELETED',
+    resourceType: 'profile',
+    resourceId: id,
+    before: { email: target.email },
+    requestId: c.var.requestId,
+  });
+  return c.json({ data: { ok: true }, requestId: c.var.requestId });
+});
 
 /** List application identities with staff link + invitation state (spec §26). */
 userRoutes.get('/', manage, async (c) => {
