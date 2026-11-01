@@ -6,6 +6,7 @@ import { createDb, type Db } from '@srik/db';
 import { enforcePasswordChange, loadApplicationUser } from './auth/session.ts';
 import { me } from './routes/auth.ts';
 import { onboardingRoutes } from './routes/onboarding.ts';
+import { timetableRoutes } from './routes/timetable.ts';
 import { userRoutes } from './routes/users.ts';
 import { auditLogRoutes } from './routes/audit.ts';
 import { metaRoutes } from './routes/meta.ts';
@@ -132,6 +133,7 @@ v1.route('/staff', staffRoutes);
 v1.route('/students', studentRoutes);
 v1.route('/', academicRoutes);
 v1.route('/', attendanceRoutes);
+v1.route('/', timetableRoutes);
 
 app.route('/api/v1', v1);
 

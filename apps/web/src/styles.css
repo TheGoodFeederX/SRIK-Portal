@@ -46,3 +46,38 @@
     @apply border-b border-slate-100 px-3 py-2;
   }
 }
+
+/* Print-friendly timetables (spec v1.3 §36): A4 landscape, black/white, no app chrome. */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 12mm;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .print\:hidden {
+    display: none !important;
+  }
+  .print\:block {
+    display: block !important;
+  }
+  .timetable-grid,
+  .timetable-grid th,
+  .timetable-grid td {
+    border: 1px solid #000 !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+  .timetable-grid th {
+    font-weight: 700;
+  }
+  main {
+    padding: 0 !important;
+  }
+  aside,
+  header {
+    display: none !important;
+  }
+}

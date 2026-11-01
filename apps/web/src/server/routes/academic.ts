@@ -7,6 +7,7 @@ import { requirePermission, requireUser } from '../auth/session.ts';
 import { currentStaffId, getTeacherClassIds } from '../auth/scope.ts';
 import { idParam, parse } from '../app.ts';
 import { writeAudit } from './audit.ts';
+import { countTimetableReferences } from '../services/timetable.ts';
 import {
   assertActiveSubject,
   assertActiveTeacher,
@@ -297,6 +298,10 @@ academicRoutes.delete('/teaching-assignments/:id', requirePermission('academic.a
   const [before] = await c.var.db.select().from(teachingAssignments).where(eq(teachingAssignments.id, id)).limit(1);
   if (!before) throw new HTTPException(404, { message: 'Agihan tidak dijumpai.', cause: { code: 'ASSIGNMENT_NOT_FOUND' } });
   await assertYearMutable(c.var.db, before.academicYearId);
+  // Timetable references block deletion (spec v1.3 §38).
+  if ((await countTimetableReferences(c.var.db, id)) > 0) {
+    throw new HTTPException(409, { message: 'Agihan ini digunakan dalam jadual waktu.', cause: { code: 'ASSIGNMENT_IN_USE' } });
+  }
   await c.var.db.delete(teachingAssignments).where(eq(teachingAssignments.id, id));
   await writeAudit(c.var.db, {
     actorId: actor.profileId,
