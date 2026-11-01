@@ -14,7 +14,13 @@
 | 6 | 2026-10-31 | PROD-6 Env Vercel production | agent | PASS | tidak | +`NEON_AUTH_BASE_URL`, +`VITE_NEON_AUTH_URL`, `CORS_ORIGINS` dikemas; `AUTH_SECRET` dibuang |
 | 7 | 2026-10-31 | PROD-7 PR #1 merge + deploy | agent | PASS | tidak | merge `135d8967`, deploy `dpl_22mZR7NWf73QTb3hr6FRobyQVD9m` |
 | 8 | 2026-10-31 | PROD-8 Smoke test | agent | PASS | tidak | 38/38 dalam `SMOKE_TEST.md` |
-| 9 | — | PROD-9 Stabilization bermula | — | — | — | lihat `STABILIZATION.md` |
+| 9 | 2026-10-31 | PROD-9 Stabilization bermula | agent | PASS | tidak | rujuk `STABILIZATION.md` |
+| 10 | 2026-11-01 | R1–R3 provisioning + reset + paksa tukar | agent | PASS | tidak | `POST /users/provision`, `/reset-password`, `PASSWORD_CHANGE_REQUIRED` |
+| 11 | 2026-11-01 | R5 backup automatik + restore drill | agent | PASS | tidak | `backup.yml`, dump 72 KB, drill PASS |
+| 12 | 2026-11-01 | v1.2 merge + deploy | agent | PASS | tidak | PR #2 merge `ea55ddab`, deploy `dpl_3nvKXh1Ei8ymhcmRyG2cDDcFEqga` |
+| 13 | 2026-11-01 | Stage B recovery point | agent | PASS | tersedia | branch `rollback-pre-stage-b-20261101` + dump 76 KB |
+| 14 | 2026-11-01 | Stage B destructive migration | agent | PASS | tidak | `0003_remove_legacy_auth`; `sessions`/`password_hash` hilang |
+| 15 | 2026-11-01 | Post-Stage-B verification | agent | PASS | tidak | deploy `4ad7f4ec`, 15 semakan dalam `STAGE_B_EXECUTION.md` |
 
 ### Nota PROD-5 (kredensial admin)
 

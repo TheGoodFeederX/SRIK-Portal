@@ -144,3 +144,33 @@ Nota sisihan kecil: §46 "404" untuk `/app/not-a-real-route` dipenuhi oleh SPA �
 - Data sedia ada (1 murid, 2 kelas, 1 staf asal) tidak diubah.
 - Kata laluan admin production ditetapkan secara sementara untuk membuktikan aliran penuh; **pemilik
   mesti menetapkannya semula melalui `/lupa-kata-laluan`** (lihat `CUTOVER_LOG.md` §Nota).
+
+
+---
+
+# SMOKE TEST v1.2 / Post-Stage-B (2026-11-01)
+
+Deploy `dpl_GTyX4KEghZD5FMJLuGdJGnKPHbk6` (`4ad7f4ec`).
+
+| # | Semakan | Keputusan |
+|---|---|---|
+| 1 | `GET /api/v1/health` | ✅ 200 |
+| 2 | `GET /api/v1/auth/session` (admin) | ✅ 200 authenticated-active ADMIN |
+| 3 | Akademik: subjects / teaching-assignments / enrollments / summary | ✅ 200 |
+| 4 | Cipta subjek | ✅ 201 |
+| 5 | Cipta agihan pengajaran | ✅ 201 |
+| 6 | Agihan duplikat | ✅ 409 `ASSIGNMENT_EXISTS` |
+| 7 | Cipta pendaftaran kelas | ✅ 409 `ENROLLMENT_EXISTS` (murid sudah berdaftar) |
+| 8 | Roster kelas | ✅ 200 |
+| 9 | Ringkasan akademik | ✅ 200 |
+| 10 | Provision akaun guru | ✅ 201 (kata laluan sementara sekali) |
+| 11 | Guru log masuk dengan kata laluan sementara | ✅ 200 |
+| 12 | Laluan operasi sebelum tukar kata laluan | ✅ 403 `PASSWORD_CHANGE_REQUIRED` |
+| 13 | Selepas tukar kata laluan | ✅ 200, scope terhad |
+| 14 | Guru akses `/users` | ✅ 403 |
+| 15 | Set semula kata laluan oleh admin | ✅ 200 |
+| 16 | Tukar emel alias | ✅ 200 |
+| 17 | Padam akaun ujian | ✅ 200 |
+| 18 | Endpoint login legacy | ✅ 404 |
+| 19 | Permintaan tanpa sesi | ✅ 401 |
+| 20 | Stage B: `sessions` + `password_hash` | ✅ ABSENT |
