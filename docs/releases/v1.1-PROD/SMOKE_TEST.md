@@ -200,3 +200,46 @@ Deploy `dpl_7BsAABFLUnQGgFT2DQXMjNtTnyau` (`68e11157`). Migration `0004`, `0005`
 | 13 | Guru lihat jadual guru lain | ✅ 403 |
 | 14 | Ringkasan tamat ujian | ✅ `timetableEntries: 0` |
 | 15 | Pembersihan data ujian | ✅ entri/agihan/waktu dipadam, subjek dinyahaktifkan |
+
+---
+
+# SMOKE TEST v1.4 Examination (2026-11-01)
+
+Deploy `dpl_BPqs3fn7j9LvpbJoMLUgbaS9vxyG` (`5e3fa33e`), fix `daa3140`.
+Migration `0006_exams_v14.sql` applied from recovery point `rollback-pre-v1.4-20261101` +
+dump `srik-20261101T060418Z.dump` (84 KB, sha256 `2f3423b4ec89…`).
+
+| # | Semakan | Keputusan |
+|---|---|---|
+| 1 | `GET /api/v1/health` | ✅ 200 |
+| 2 | `GET /api/v1/exams` | ✅ 200 |
+| 3 | Cipta peperiksaan (DRAFT) | ✅ 201 |
+| 4 | Tambah subjek peperiksaan | ✅ 201 |
+| 5 | Subjek pendua | ✅ 409 `EXAM_SUBJECT_EXISTS` |
+| 6 | Roster layak (`GET /exam-subjects/:id/marks`) | ✅ 200 (1 murid dari enrollment ACTIVE) |
+| 7 | Markah di luar julat (150/100) | ✅ 400 `EXAM_MARK_OUT_OF_RANGE` |
+| 8 | `submit-review` sebelum lengkap | ✅ 409 `EXAM_MARKS_INCOMPLETE` |
+| 9 | Simpan markah (bulk) | ✅ 200 `{saved:1, changed:1}` |
+| 10 | `submit-review` → `approve` → `publish` | ✅ 200 setiap satu |
+| 11 | Edit markah selepas publish | ✅ 409 `EXAM_PUBLISHED_IMMUTABLE` |
+| 12 | `GET /exams/:id/students/:studentId/results` | ✅ 200 |
+| 13 | Padam subjek peperiksaan selepas publish | ✅ 409 `EXAM_PUBLISHED_IMMUTABLE` |
+| 14 | Pembersihan data ujian | ✅ peperiksaan/subjek/agihan dipadam |
+
+## Isu yang ditemui semasa smoke (dibetulkan)
+
+Subjek peperiksaan pendua memulangkan **500** dan bukan 409: drizzle 0.45 membalut ralat pemandu
+supaya `err.code` hilang. Dibetulkan dalam `apps/web/src/server/db-errors.ts`
+(`isUniqueViolation` membaca `cause.code`), digunakan oleh laluan peperiksaan **dan** waktu.
+Disahkan semula pada production: `409 EXAM_SUBJECT_EXISTS` / `409 TIMETABLE_PERIOD_EXISTS`.
+
+## Keadaan data production selepas pembersihan
+
+```text
+profiles 1 · user_roles 1 · staff 2 · students 1 · classes 2 · enrollments 1
+subjects 0 · teaching_assignments 0 · timetable_periods 0 · timetable_entries 0
+exams 0 · exam_subjects 0 · exam_marks 0 · account_invitations 0 · audit_log 55
+```
+
+Nota: semua subjek production ketika ini berasal daripada ujian smoke (subjek seed asal telah
+dinyahaktifkan pada v1.3) dan telah dibuang. Data sekolah sebenar belum dimasukkan.
