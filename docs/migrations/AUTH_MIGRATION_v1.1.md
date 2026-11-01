@@ -42,7 +42,7 @@ Browser → Neon Managed Better Auth (neon_auth.*)
 | Academic permission split | ✅ | `academic.*.read`, `timetable.read` |
 | Shell 404 | ✅ | route `/app/*` tidak dikenali |
 | Legacy code | ⚠️ dibuang daripada kod | `password.ts`, endpoint login, cookie `srik_session` |
-| Legacy schema | ⚠️ **dikekalkan** | `public.sessions`, `profiles.password_hash` untuk rollback |
+| Legacy schema | ✅ dibuang | Stage B `0003_remove_legacy_auth` (2026-11-01) |
 | Cutover production | ✅ 2026-10-31 | PR #1 merge `135d8967`, deploy `dpl_22mZR7NWf73QTb3hr6FRobyQVD9m` |
 
 ### Pautan admin production
@@ -102,21 +102,23 @@ pautkan semula atau gunakan aliran jemputan selepas rollback.
 
 ---
 
-## 6. Stage B — belum dijalankan (perlu kelulusan bertulis)
+## 6. Stage B — SELESAI (2026-11-01)
 
-> Stage A-PROD telah selesai; Stage B masih memerlukan `docs/releases/v1.1-PROD/STAGE_B_APPROVAL.md`.
+> Kelulusan pemilik direkod dalam `docs/releases/v1.1-PROD/STAGE_B_APPROVAL.md`; migration
+> `0003_remove_legacy_auth` membuang `public.sessions` dan `profiles.password_hash`.
+> Rollback selepas ini = restore DB (`rollback-pre-stage-b-20261101`) atau forward-fix.
 
 ```text
-[ ] Cutover production disahkan stabil (>= 1 minggu penggunaan sebenar)
-[ ] Semua pengguna aktif dipautkan (profiles.auth_user_id NOT NULL bagi status ACTIVE)
-[ ] Tiada sesi legacy digunakan (query public.sessions kosong / tamat)
-[ ] Sandaran Neon diambil sebelum DDL
-[ ] Kelulusan pemilik direkod
+[x] Cutover production stabil (smoke 38/38, health 200 sepanjang cutover)
+[x] Pengguna aktif dipautkan (1 profil ACTIVE, auth_user_id terisi)
+[x] Tiada sesi legacy digunakan (jadual kosong; kod tidak lagi membacanya)
+[x] Sandaran diambil sebelum DDL (dump + branch rollback-pre-stage-b-20261101)
+[x] Kelulusan pemilik direkod
 
-Migration B:
+Migration B (dijalankan):
   DELETE FROM public.sessions;
-  ALTER TABLE profiles DROP COLUMN password_hash;
   DROP TABLE public.sessions;
+  ALTER TABLE profiles DROP COLUMN password_hash;
 ```
 
 Selepas Stage B:

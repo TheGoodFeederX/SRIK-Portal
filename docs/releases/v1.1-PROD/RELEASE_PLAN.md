@@ -24,8 +24,8 @@
 | PROD-7 | Deploy (merge PR → main) | **Pemilik sahaja** (§79.15) | ✅ PR #1 merge `135d8967` |
 | PROD-8 | Verification / smoke | Harness | ✅ 38/38 |
 | PROD-9 | Stabilization | Pemilik + Harness | ⏳ bermula |
-| PROD-10 | Stage B legacy removal | Harness selepas kelulusan berasingan | ❌ |
-| PROD-11 | Post-removal verification | Harness | ❌ |
+| PROD-10 | Stage B legacy removal | Harness selepas kelulusan berasingan | ✅ `0003_remove_legacy_auth` |
+| PROD-11 | Post-removal verification | Harness | ✅ |
 
 ---
 
@@ -86,7 +86,7 @@ Rujukan
   + docs/releases/v1.1-PROD/*
 ```
 
-**Skema legacy yang SENGAJA dikekalkan (rollback):** `public.sessions`, `profiles.password_hash`.
+**Skema legacy:** dibuang dalam Stage B (2026-11-01, migration `0003_remove_legacy_auth`).
 
 ---
 
@@ -99,7 +99,7 @@ Rujukan
 | `profiles.status` lalai | `ACTIVE` → `INVITED` (baris sedia ada tidak berubah) |
 | `account_invitations` | jadual baharu |
 | `invitation_status` | enum baharu |
-| `public.sessions` | **tidak disentuh** |
+| `public.sessions` | dibuang dalam Stage B (`0003_remove_legacy_auth`) |
 | Data domain | tiada perubahan, tiada tulis semula FK |
 
 Migration A boleh diterbalikkan secara manual jika perlu (`DROP TABLE account_invitations`, `DROP COLUMN auth_user_id`), tetapi **tidak disyorkan** — ia tidak merosakkan Stage A.

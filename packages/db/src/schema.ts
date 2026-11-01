@@ -40,12 +40,11 @@ export const staffAttendanceStatusEnum = pgEnum('staff_attendance_status', [
 // ---------- Identity & Access ----------
 
 // Application identity. authUserId bridges to neon_auth.user.id (Managed Better Auth).
-// ponytail: passwordHash is legacy Stage-A only; dropped in Migration B after cutover.
+// Stage B: legacy password_hash removed — credentials live in neon_auth.account.
 export const profiles = pgTable('profiles', {
   id: id(),
   authUserId: text('auth_user_id').unique(),
   email: text('email').notNull().unique(),
-  passwordHash: text('password_hash'),
   displayName: text('display_name').notNull(),
   phone: text('phone'),
   status: accountStatusEnum('status').notNull().default('INVITED'),
@@ -93,17 +92,6 @@ export const userRoles = pgTable(
   },
   (t) => [primaryKey({ columns: [t.profileId, t.role] })],
 );
-
-// Legacy custom session table (Stage A retention). Managed Auth owns sessions in neon_auth.
-// ponytail: kept in the schema so no migration is generated; dropped in Stage B (Migration B).
-export const sessions = pgTable('sessions', {
-  id: text('id').primaryKey(),
-  profileId: uuid('profile_id')
-    .notNull()
-    .references(() => profiles.id, { onDelete: 'cascade' }),
-  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
-  createdAt: created(),
-});
 
 export const loginAudit = pgTable('login_audit', {
   id: id(),
