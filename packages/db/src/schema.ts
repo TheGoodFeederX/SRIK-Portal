@@ -25,6 +25,7 @@ export const accountStatusEnum = pgEnum('account_status', ['INVITED', 'ACTIVE', 
 export const studentStatusEnum = pgEnum('student_status', ['ACTIVE', 'GRADUATED', 'TRANSFERRED', 'WITHDRAWN']);
 export const yearStatusEnum = pgEnum('academic_year_status', ['PLANNED', 'ACTIVE', 'CLOSED']);
 export const classStatusEnum = pgEnum('class_status', ['ACTIVE', 'ARCHIVED']);
+export const enrollmentStatusEnum = pgEnum('enrollment_status', ['ACTIVE', 'TRANSFERRED', 'WITHDRAWN', 'COMPLETED']);
 export const attendanceStatusEnum = pgEnum('attendance_status', ['PRESENT', 'ABSENT', 'SICK', 'EXCUSED', 'LATE']);
 export const roleEnum = pgEnum('role', ['ADMIN', 'TEACHER']);
 export const examStatusEnum = pgEnum('exam_status', ['DRAFT', 'REVIEW', 'APPROVED', 'PUBLISHED']);
@@ -48,6 +49,8 @@ export const profiles = pgTable('profiles', {
   displayName: text('display_name').notNull(),
   phone: text('phone'),
   status: accountStatusEnum('status').notNull().default('INVITED'),
+  // Forced first-login password change (spec v1.1-PROD-R2 §9).
+  mustChangePassword: boolean('must_change_password').notNull().default(false),
   createdAt: created(),
   updatedAt: updated(),
 });
@@ -238,7 +241,10 @@ export const classes = pgTable(
     classTeacherId: uuid('class_teacher_id').references(() => staff.id, { onDelete: 'set null' }),
     status: classStatusEnum('status').notNull().default('ACTIVE'),
   },
-  (t) => [uniqueIndex('classes_year_name_unique').on(t.academicYearId, t.name)],
+  (t) => [
+    uniqueIndex('classes_year_name_unique').on(t.academicYearId, t.name),
+    index('classes_year_idx').on(t.academicYearId),
+  ],
 );
 
 export const enrollments = pgTable(
@@ -256,9 +262,14 @@ export const enrollments = pgTable(
       .references(() => academicYears.id, { onDelete: 'restrict' }),
     enrolledAt: date('enrolled_at').notNull(),
     leftAt: date('left_at'),
-    status: text('status').notNull().default('ACTIVE'),
+    status: enrollmentStatusEnum('status').notNull().default('ACTIVE'),
   },
-  (t) => [uniqueIndex('enrollments_student_year_unique').on(t.studentId, t.academicYearId)],
+  (t) => [
+    uniqueIndex('enrollments_student_year_unique').on(t.studentId, t.academicYearId),
+    // v1.2 §49 index review: scope + class roster queries filter on these.
+    index('enrollments_class_idx').on(t.classId),
+    index('enrollments_year_idx').on(t.academicYearId),
+  ],
 );
 
 export const subjects = pgTable('subjects', {
@@ -289,6 +300,10 @@ export const teachingAssignments = pgTable(
   },
   (t) => [
     uniqueIndex('teaching_assignments_unique').on(t.academicYearId, t.teacherId, t.classId, t.subjectId),
+    // v1.2 §49: teacher scope and assignment filters.
+    index('teaching_assignments_teacher_idx').on(t.teacherId),
+    index('teaching_assignments_class_idx').on(t.classId),
+    index('teaching_assignments_subject_idx').on(t.subjectId),
   ],
 );
 

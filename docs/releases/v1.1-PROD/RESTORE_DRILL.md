@@ -1,38 +1,34 @@
-# RESTORE DRILL — v1.1-PROD
+# RESTORE DRILL — v1.1-PROD-R2
 
-> Latihan pemulihan (§14). Dijalankan pada branch Neon **bukan production**.
+> Latihan pemulihan (§19). Dijalankan pada branch Neon **bukan production**.
 
----
+## Pelaksanaan 2026-11-01
 
-## Prosedur
+| Item | Nilai |
+|---|---|
+| Dump | `srik-20261101T023649Z.dump` (72 KB) |
+| sha256 | `33c4316c6d14…` |
+| Sumber | production `main` melalui sambungan direct |
+| Branch latihan | `drill-restore-20261101` / `br-dark-morning-b310uhc4` |
+| Arahan | `TARGET_URL=… bash scripts/restore-verify.sh <dump>` |
+
+### Semakan
+
+| # | Item | Jangkaan | Keputusan |
+|---|---|---|---|
+| 1 | Jadual teras | profiles, user_roles, staff, students, classes, enrollments, subjects, teaching_assignments, student_attendance, account_invitations, audit_log | ✅ (20 jadual) |
+| 2 | Artifak legacy (pra-Stage B) | `sessions`, `profiles.password_hash` hadir | ✅ hadir |
+| 3 | Profil | `profiles = 1` | ✅ |
+| 4 | Pautan identiti | `linked = 1` | ✅ |
+| 5 | ADMIN | `admins = 1` | ✅ |
+| 6 | Drift `student_guardians` | `0` | ✅ |
+| 7 | Aplikasi | `GET /api/v1/health` pada DB dipulihkan | ✅ (semakan skrip) |
+
+**Keputusan: PASS.** Branch latihan dipadam selepas rekod.
+
+## Latihan seterusnya
 
 ```text
-1. Neon Console → project srik-portal → Restore
-2. Pilih restore point / timestamp yang direkod dalam RECOVERY_POINT.md
-3. Pulihkan ke branch BAHARU (contoh: drill-restore-YYYYMMDD)
-4. Sambung DATABASE_URL ke branch tersebut
-5. Jalankan semakan di bawah
-6. Padam branch latihan selepas rekod
+- selepas Stage B: sahkan artifacts legacy ABSENT (scripts/restore-verify.sh menyemak ini)
+- ulang setiap suku tahun selepas data sekolah sebenar bermula
 ```
-
----
-
-## Semakan
-
-| # | Item | Jangkaan | Status |
-|---|---|---|---|
-| 1 | Skema | `profiles`, `user_roles`, `staff`, `students`, `classes`, `student_attendance` wujud | ☐ |
-| 2 | Migration journal | sepadan dengan `RECOVERY_POINT.md` | ☐ |
-| 3 | Profil admin | `profiles.auth_user_id NOT NULL`, `status=ACTIVE` | ☐ |
-| 4 | Role admin | `user_roles` mengandungi `ADMIN` | ☐ |
-| 5 | Baseline staf/murid | kiraan sepadan dengan pra-pemulihan | ☐ |
-| 6 | Aplikasi | `GET /api/v1/health` → 200, `GET /api/v1/auth/session` → 200 | ☐ |
-| 7 | Log masuk | berjaya dengan identiti Managed Auth branch tersebut | ☐ |
-
----
-
-## Rekod latihan
-
-| Tarikh | Operator | Restore point | Branch latihan | Keputusan | Nota |
-|---|---|---|---|---|---|
-| — | — | — | — | — | — |

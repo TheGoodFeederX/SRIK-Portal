@@ -1,11 +1,12 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
-import { useAuth, isOperational } from '@/app/providers/auth';
+import { useAuth, isOperational, mustChangePassword } from '@/app/providers/auth';
 import { useI18n } from '@/i18n/context';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { ForgotPasswordPage, ResetPasswordPage } from '@/features/auth/ForgotPasswordPage';
 import { OnboardingPage } from '@/features/auth/OnboardingPage';
 import { AccountStatePage } from '@/features/auth/AccountStatePage';
+import { ChangePasswordPage } from '@/features/auth/ChangePasswordPage';
 import { DashboardPage, LoadingState } from '@/app/portfolios/DashboardPage';
 import { PortfolioLandingPage } from '@/app/portfolios/PortfolioLandingPage';
 import { StaffPage } from '@/features/administration/StaffPage';
@@ -14,6 +15,9 @@ import { UsersPage } from '@/features/administration/UsersPage';
 import { StudentsPage } from '@/features/hem/StudentsPage';
 import { AttendancePage } from '@/features/hem/AttendancePage';
 import { ClassesPage } from '@/features/academic/ClassesPage';
+import { SubjectsPage } from '@/features/academic/SubjectsPage';
+import { AssignmentsPage } from '@/features/academic/AssignmentsPage';
+import { EnrollmentsPage } from '@/features/academic/EnrollmentsPage';
 import { PlaceholderPage } from '@/components/layout/PlaceholderPage';
 import { NotFoundPage } from '@/components/layout/NotFoundPage';
 
@@ -28,6 +32,7 @@ function RequireActive({ children }: { children: React.ReactNode }) {
   const { t } = useI18n();
   if (state === 'loading') return <div className="p-8">{t('app.loading')}</div>;
   if (state === 'signed-out') return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  if (mustChangePassword(state)) return <Navigate to="/tukar-kata-laluan" replace />;
   if (!isOperational(state)) return <AccountStatePage />;
   return <>{children}</>;
 }
@@ -39,6 +44,7 @@ export function AppRouter() {
       <Route path="/lupa-kata-laluan" element={<ForgotPasswordPage />} />
       <Route path="/reset-kata-laluan" element={<ResetPasswordPage />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
+      <Route path="/tukar-kata-laluan" element={<ChangePasswordPage />} />
       <Route
         path="/app"
         element={
@@ -52,6 +58,9 @@ export function AppRouter() {
         <Route path="administration/users" element={<UsersPage />} />
         <Route path="administration/audit-log" element={<AuditLogPage />} />
         <Route path="academic/classes" element={<ClassesPage />} />
+        <Route path="academic/subjects" element={<SubjectsPage />} />
+        <Route path="academic/teaching-assignments" element={<AssignmentsPage />} />
+        <Route path="academic/enrollments" element={<EnrollmentsPage />} />
         <Route path="hem/students" element={<StudentsPage />} />
         <Route path="hem/attendance" element={<AttendancePage />} />
         <Route path=":portfolio" element={<PortfolioLandingPage />} />

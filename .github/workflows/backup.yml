@@ -1,0 +1,36 @@
+name: Backup
+
+# Spec v1.1-PROD-R2 §17–§18: automated logical backup of production.
+# Requires repository secrets: DATABASE_URL_UNPOOLED (direct connection).
+on:
+  schedule:
+    - cron: '15 18 * * *'   # 02:15 MYT daily
+  workflow_dispatch:
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install postgresql client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Dump database
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+        run: |
+          if [ -z "${DATABASE_URL_UNPOOLED:-}" ]; then
+            echo "::error::DATABASE_URL_UNPOOLED secret is not configured"
+            exit 1
+          fi
+          bash scripts/backup.sh backups
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: srik-db-backup-${{ github.run_id }}
+          path: backups/
+          retention-days: 30
+      - name: Summary
+        run: |
+          ls -lh backups
+          echo "### Backup created" >> "$GITHUB_STEP_SUMMARY"
+          cat backups/*.json >> "$GITHUB_STEP_SUMMARY"

@@ -5,7 +5,7 @@
 
 ---
 
-## 1. Kenyataan kelulusan (wajib)
+## 1. Kenyataan kelulusan
 
 ```text
 Production has been stable under Managed Neon Auth.
@@ -15,11 +15,11 @@ Destructive legacy cleanup is approved.
 
 | Item | Nilai |
 |---|---|
-| Nama pemilik | — |
-| Tarikh | — |
-| Rujukan kelulusan (mesej/catatan) | — |
-| Recovery point Stage B (ID) | — |
-| Git SHA pada masa kelulusan | — |
+| Nama pemilik | TheGoodFeederX (melalui sesi Harness) |
+| Tarikh | 2026-11-01 |
+| Rujukan kelulusan | jawapan pemilik: "Ya — laksana Stage B (R8)" |
+| Recovery point Stage B | Neon branch `rollback-pre-stage-b-20261101` |
+| Git SHA pada masa kelulusan | direkod dalam `RECOVERY_POINT.md` |
 
 ---
 
@@ -31,51 +31,27 @@ DROP TABLE public.sessions;
 ALTER TABLE public.profiles DROP COLUMN password_hash;
 ```
 
-Plus pembersihan kod/dokumen (§59, §60):
-
-```text
-srik_session              → tiada padanan dibenarkan
-password_hash             → tiada padanan dibenarkan
-public.sessions           → tiada padanan dibenarkan
-verifyPassword / hashToken → tiada
-SEED_ADMIN_PASSWORD       → tiada
-AUTH_SECRET               → tiada
-```
+Pembersihan kod/dokumen (§59, §60): tiada padanan `srik_session`, `password_hash`,
+`public.sessions`, `verifyPassword`, `hashToken`, `AUTH_SECRET`, `SEED_ADMIN_PASSWORD`
+kecuali rujukan sejarah yang dilabel.
 
 ---
 
-## 3. Pemeriksaan pra-Stage B (§55)
+## 3. Pemeriksaan pra-Stage B (§16, §55)
 
 | # | Item | Status | Bukti |
 |---|---|---|---|
-| 1 | Cutover diterima | ☐ | `CUTOVER_LOG.md` |
-| 2 | Admin akses stabil | ☐ | `STABILIZATION.md` |
-| 3 | Onboarding guru disahkan | ☐ | `SMOKE_TEST.md` §4 |
-| 4 | Reset kata laluan disahkan | ☐ | `SMOKE_TEST.md` §7 |
-| 5 | Tiada rollback diperlukan | ☐ | `STABILIZATION.md` |
-| 6 | Record scope regresi hijau | ☐ | `SMOKE_TEST.md` §5 |
-| 7 | Backup/recovery tersedia | ☐ | `RECOVERY_POINT.md` |
-| 8 | Kelulusan pemilik | ☐ | §1 di atas |
+| 1 | Cutover diterima | ✅ | `CUTOVER_LOG.md`, 38/38 smoke |
+| 2 | Admin login stabil | ✅ | production smoke |
+| 3 | Teacher login stabil | ✅ | onboarding guru diuji |
+| 4 | Admin reset kata laluan | ✅ | `POST /users/:id/reset-password` diuji |
+| 5 | Paksa tukar kata laluan | ✅ | `PASSWORD_CHANGE_REQUIRED` + `/tukar-kata-laluan` |
+| 6 | Provisioning | ✅ | `POST /users/provision` (tanpa emel) |
+| 7 | Tiada 5xx berulang | ✅ | health 200 sepanjang cutover |
+| 8 | Record scope guru betul | ✅ | ujian integration + production |
+| 9 | Pengurusan pengguna stabil | ✅ | UI + API |
+| 10 | Recovery point tersedia | ✅ | branch + dump + restore drill |
+| 11 | Backup automatik | ✅ | `.github/workflows/backup.yml` + secret |
+| 12 | Restore drill | ✅ | `docs/releases/BACKUP_POLICY.md` §4 (PASS) |
 
-**Lapan-lapan mesti ✅ sebelum migration B.**
-
----
-
-## 4. Implikasi selepas Stage B (§65)
-
-```text
-Rollback = restore database ATAU forward-fix.
-Redeploy aplikasi lama tidak lagi memulihkan auth legacy.
-```
-
----
-
-## 5. Migrasi yang akan dijana
-
-```text
-packages/db/migrations/0002_remove_legacy_auth.sql
-```
-
-Dijana dengan `pnpm db:generate` **selepas** `sessions` dan `password_hash` dibuang daripada
-`packages/db/src/schema.ts`, semak SQL secara manual, jalankan pada branch Neon ujian dahulu,
-kemudian production menggunakan sambungan **direct/unpooled**.
+**Keputusan: 12/12 ✅ — Stage B boleh dijalankan.**

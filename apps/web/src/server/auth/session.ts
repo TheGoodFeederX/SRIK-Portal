@@ -62,3 +62,20 @@ export function requirePermission(permission: Permission) {
 export function isAdmin(c: Context<AppEnv>): boolean {
   return c.var.user?.roles.includes('ADMIN') ?? false;
 }
+
+/**
+ * Forced first-login password change (spec v1.1-PROD-R2 §10). While `must_change_password` is set,
+ * only the routes needed to change the password remain reachable.
+ */
+const PASSWORD_CHANGE_ALLOWED = new Set(['/api/v1/auth/session', '/api/v1/auth/password-changed', '/api/v1/auth/logout', '/api/v1/health']);
+
+export const enforcePasswordChange = async (c: Context<AppEnv>, next: Next) => {
+  const user = c.var.user;
+  if (user?.mustChangePassword && !PASSWORD_CHANGE_ALLOWED.has(c.req.path)) {
+    throw new HTTPException(403, {
+      message: 'Sila tukar kata laluan anda sebelum meneruskan.',
+      cause: { code: 'PASSWORD_CHANGE_REQUIRED' },
+    });
+  }
+  await next();
+};
