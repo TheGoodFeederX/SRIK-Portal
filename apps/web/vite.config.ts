@@ -81,6 +81,15 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Same-origin auth in dev so the browser receives the Managed Auth session cookie for
+    // localhost (it is otherwise scoped to the auth service host and never reaches our API).
+    proxy: {
+      '/neonauth': {
+        target: process.env.NEON_AUTH_BASE_URL ?? process.env.VITE_NEON_AUTH_URL ?? 'http://localhost:8787',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/neonauth/, ''),
+      },
+    },
     fs: { allow: [fileURLToPath(new URL('../..', import.meta.url))] },
   },
 });
