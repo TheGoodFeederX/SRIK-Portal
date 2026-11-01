@@ -42,10 +42,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const target = `${upstream()}/${path.replace(/^\//, '')}${params.size ? `?${params}` : ''}`;
 
+  // Forward only what the auth service needs. Host/proxy headers describe *this* hop and the
+  // upstream rejects a foreign hostname (INVALID_HOSTNAME).
+  const ALLOWED = new Set(['content-type', 'cookie', 'accept', 'origin', 'referer', 'user-agent', 'authorization', 'accept-language']);
   const headers = new Headers();
   for (const [key, value] of Object.entries(req.headers)) {
-    // Host/connection belong to this hop; the upstream must see its own host.
-    if (['host', 'connection', 'content-length'].includes(key.toLowerCase())) continue;
+    if (!ALLOWED.has(key.toLowerCase())) continue;
     if (typeof value === 'string') headers.set(key, value);
     else if (Array.isArray(value)) headers.set(key, value.join(', '));
   }
