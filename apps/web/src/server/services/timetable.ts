@@ -1,5 +1,6 @@
 import { HTTPException } from 'hono/http-exception';
 import { and, asc, eq, inArray, ne, sql, type SQL } from 'drizzle-orm';
+import { constraintName, isUniqueViolation } from '../db-errors.ts';
 import {
   academicYears,
   classes,
@@ -219,9 +220,8 @@ export async function validateTimetableEntry(db: Db, input: EntryInput, excludeI
 
 /** Maps a Postgres unique violation to the specific conflict code (§44). */
 export function mapUniqueViolationToConflict(error: unknown): never | null {
-  const code = (error as { code?: string }).code;
-  const constraint = (error as { constraint_name?: string }).constraint_name ?? (error as { constraint?: string }).constraint ?? '';
-  if (code !== '23505') return null;
+  if (!isUniqueViolation(error)) return null;
+  const constraint = constraintName(error);
   if (constraint.includes('teacher')) {
     throw conflict('TIMETABLE_TEACHER_CONFLICT', 'Guru sudah mengajar kelas lain pada waktu tersebut.', { constraint });
   }

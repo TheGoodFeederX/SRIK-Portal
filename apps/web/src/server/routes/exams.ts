@@ -6,6 +6,7 @@ import { examMarks, examSubjects, exams, teachingAssignments } from '@srik/db';
 import { requirePermission, requireUser } from '../auth/session.ts';
 import { idParam, parse } from '../app.ts';
 import { writeAudit } from './audit.ts';
+import { isUniqueViolation } from '../db-errors.ts';
 import {
   assertExamMutable,
   assertExamVisible,
@@ -173,7 +174,7 @@ examRoutes.post('/exams/:id/subjects', requirePermission('exam.manage'), async (
     });
     return c.json({ data: row, requestId: c.var.requestId }, 201);
   } catch (err) {
-    if ((err as { code?: string }).code === '23505') {
+    if (isUniqueViolation(err)) {
       throw new HTTPException(409, {
         message: 'Subjek ini sudah dikonfigurasikan untuk kelas tersebut.',
         cause: { code: 'EXAM_SUBJECT_EXISTS' },

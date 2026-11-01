@@ -7,6 +7,7 @@ import { requirePermission, requireUser } from '../auth/session.ts';
 import { canAccessClass, currentStaffId } from '../auth/scope.ts';
 import { idParam, parse } from '../app.ts';
 import { writeAudit } from './audit.ts';
+import { isUniqueViolation } from '../db-errors.ts';
 import { assertYearMutable } from '../services/academic.ts';
 import {
   SCHOOL_DAYS,
@@ -99,7 +100,7 @@ timetableRoutes.post('/timetable/periods', requirePermission('timetable.manage')
     });
     return c.json({ data: row, requestId: c.var.requestId }, 201);
   } catch (err) {
-    if ((err as { code?: string }).code === '23505') {
+    if (isUniqueViolation(err)) {
       throw new HTTPException(409, { message: 'Nombor waktu ini sudah wujud.', cause: { code: 'TIMETABLE_PERIOD_EXISTS' } });
     }
     throw err;
