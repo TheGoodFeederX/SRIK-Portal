@@ -23,12 +23,12 @@ export const PERMISSIONS = [
   'academic.assignment.read',
   'academic.assignment.manage',
   'timetable.read',
+  'timetable.manage',
   'system.user.manage',
   'system.audit.read',
 ] as const;
 
 export const RESERVED_PERMISSIONS = [
-  'timetable.manage',
   'exam.read',
   'exam.manage',
   'exam.marks.write',

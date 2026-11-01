@@ -28,6 +28,8 @@ export const classStatusEnum = pgEnum('class_status', ['ACTIVE', 'ARCHIVED']);
 export const enrollmentStatusEnum = pgEnum('enrollment_status', ['ACTIVE', 'TRANSFERRED', 'WITHDRAWN', 'COMPLETED']);
 export const attendanceStatusEnum = pgEnum('attendance_status', ['PRESENT', 'ABSENT', 'SICK', 'EXCUSED', 'LATE']);
 export const roleEnum = pgEnum('role', ['ADMIN', 'TEACHER']);
+export const schoolDayEnum = pgEnum('school_day', ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY']);
+export const periodTypeEnum = pgEnum('period_type', ['LESSON', 'BREAK', 'ASSEMBLY', 'PRAYER', 'ACTIVITY', 'OTHER']);
 export const examStatusEnum = pgEnum('exam_status', ['DRAFT', 'REVIEW', 'APPROVED', 'PUBLISHED']);
 export const staffAttendanceStatusEnum = pgEnum('staff_attendance_status', [
   'PRESENT',
@@ -295,6 +297,36 @@ export const teachingAssignments = pgTable(
   ],
 );
 
+// Period master per academic year (spec v1.3 §8–§9).
+export const timetablePeriods = pgTable(
+  'timetable_periods',
+  {
+    id: id(),
+    academicYearId: uuid('academic_year_id')
+      .notNull()
+      .references(() => academicYears.id, { onDelete: 'cascade' }),
+    periodNo: smallint('period_no').notNull(),
+    label: text('label').notNull(),
+    startTime: time('start_time').notNull(),
+    endTime: time('end_time').notNull(),
+    type: periodTypeEnum('type').notNull().default('LESSON'),
+    isActive: boolean('is_active').notNull().default(true),
+    sortOrder: smallint('sort_order').notNull(),
+    createdAt: created(),
+    updatedAt: updated(),
+  },
+  (t) => [
+    uniqueIndex('timetable_periods_year_no_unique').on(t.academicYearId, t.periodNo),
+    uniqueIndex('timetable_periods_year_sort_unique').on(t.academicYearId, t.sortOrder),
+  ],
+);
+
+/**
+ * Timetable entry (spec v1.3 §10–§16).
+ * LESSON rows carry teaching_assignment_id; teacher/class/subject are denormalized for
+ * querying and are validated against the assignment by the service layer.
+ * Conflict guards are DB constraints, not only application checks.
+ */
 export const timetableEntries = pgTable(
   'timetable_entries',
   {
@@ -305,19 +337,32 @@ export const timetableEntries = pgTable(
     classId: uuid('class_id')
       .notNull()
       .references(() => classes.id, { onDelete: 'cascade' }),
-    subjectId: uuid('subject_id')
+    periodId: uuid('period_id')
       .notNull()
-      .references(() => subjects.id, { onDelete: 'restrict' }),
-    teacherId: uuid('teacher_id')
-      .notNull()
-      .references(() => staff.id, { onDelete: 'restrict' }),
-    dayOfWeek: smallint('day_of_week').notNull(),
-    periodNo: smallint('period_no').notNull(),
-    startTime: time('start_time').notNull(),
-    endTime: time('end_time').notNull(),
+      .references(() => timetablePeriods.id, { onDelete: 'restrict' }),
+    dayOfWeek: schoolDayEnum('day_of_week').notNull(),
+    teachingAssignmentId: uuid('teaching_assignment_id').references(() => teachingAssignments.id, { onDelete: 'restrict' }),
+    teacherId: uuid('teacher_id').references(() => staff.id, { onDelete: 'restrict' }),
+    subjectId: uuid('subject_id').references(() => subjects.id, { onDelete: 'restrict' }),
+    entryType: periodTypeEnum('entry_type').notNull().default('LESSON'),
+    label: text('label'),
     room: text('room'),
+    notes: text('notes'),
+    createdAt: created(),
+    updatedAt: updated(),
   },
-  (t) => [uniqueIndex('timetable_class_slot_unique').on(t.classId, t.dayOfWeek, t.periodNo)],
+  (t) => [
+    // Class cannot be double-booked in the same slot.
+    uniqueIndex('timetable_class_slot_unique').on(t.academicYearId, t.classId, t.dayOfWeek, t.periodId),
+    // Teacher cannot teach two classes in the same slot.
+    uniqueIndex('timetable_teacher_slot_unique')
+      .on(t.academicYearId, t.teacherId, t.dayOfWeek, t.periodId)
+      .where(sql`teacher_id IS NOT NULL`),
+    // Room cannot be booked twice in the same slot (optional in MVP, enforced when used).
+    uniqueIndex('timetable_room_slot_unique')
+      .on(t.academicYearId, t.room, t.dayOfWeek, t.periodId)
+      .where(sql`room IS NOT NULL AND room <> ''`),
+  ],
 );
 
 // ---------- Attendance ----------

@@ -43,7 +43,8 @@ export const registry: ModuleNavigationEntry[] = [
   { id: 'academic.subjects', portfolio: 'academic', group: 'group.academic', titleKey: 'subjects.title', path: '/app/academic/subjects', audiences: ['ADMIN', 'TEACHER'], requiredPermissions: ['academic.subject.read'], readiness: 'available', order: 20 },
   { id: 'academic.assignments', portfolio: 'academic', group: 'group.academic', titleKey: 'assignments.title', path: '/app/academic/teaching-assignments', audiences: ['ADMIN', 'TEACHER'], requiredPermissions: ['academic.assignment.read'], readiness: 'available', order: 25 },
   { id: 'academic.enrollments', portfolio: 'academic', group: 'group.academic', titleKey: 'enrollments.title', path: '/app/academic/enrollments', audiences: ['ADMIN', 'TEACHER'], requiredPermissions: ['student.read'], readiness: 'available', order: 28 },
-  { id: 'academic.timetable', portfolio: 'academic', group: 'group.academic', titleKey: 'portfolio.academic.title', path: '/app/academic/timetable', audiences: ['ADMIN', 'TEACHER'], requiredPermissions: ['timetable.read'], readiness: 'placeholder', order: 30 },
+  { id: 'academic.timetable', portfolio: 'academic', group: 'group.academic', titleKey: 'timetable.title', path: '/app/academic/timetable', audiences: ['ADMIN', 'TEACHER'], requiredPermissions: ['timetable.read'], readiness: 'available', order: 30 },
+  { id: 'academic.my-timetable', portfolio: 'academic', group: 'group.academic', titleKey: 'timetable.mine', path: '/app/academic/timetable/me', audiences: ['ADMIN', 'TEACHER'], requiredPermissions: ['timetable.read'], readiness: 'available', order: 32 },
   { id: 'academic.exams', portfolio: 'academic', group: 'group.academic', titleKey: 'portfolio.academic.title', path: '/app/academic/exams', audiences: ['ADMIN', 'TEACHER'], readiness: 'placeholder', order: 40 },
 
   // HEM
