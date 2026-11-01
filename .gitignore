@@ -11,3 +11,5 @@ coverage
 dev.db
 
 api-dist
+docs/LAPORAN_SPEC_v1.1_STAGE_A.md
+docs/LAPORAN_SPEC_v1.1-PROD_CUTOVER.md
