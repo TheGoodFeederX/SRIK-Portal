@@ -45,7 +45,7 @@ export const registry: ModuleNavigationEntry[] = [
   { id: 'academic.enrollments', portfolio: 'academic', group: 'group.academic', titleKey: 'enrollments.title', path: '/app/academic/enrollments', audiences: ['ADMIN', 'TEACHER'], requiredPermissions: ['student.read'], readiness: 'available', order: 28 },
   { id: 'academic.timetable', portfolio: 'academic', group: 'group.academic', titleKey: 'timetable.title', path: '/app/academic/timetable', audiences: ['ADMIN', 'TEACHER'], requiredPermissions: ['timetable.read'], readiness: 'available', order: 30 },
   { id: 'academic.my-timetable', portfolio: 'academic', group: 'group.academic', titleKey: 'timetable.mine', path: '/app/academic/timetable/me', audiences: ['ADMIN', 'TEACHER'], requiredPermissions: ['timetable.read'], readiness: 'available', order: 32 },
-  { id: 'academic.exams', portfolio: 'academic', group: 'group.academic', titleKey: 'portfolio.academic.title', path: '/app/academic/exams', audiences: ['ADMIN', 'TEACHER'], readiness: 'placeholder', order: 40 },
+  { id: 'academic.exams', portfolio: 'academic', group: 'group.academic', titleKey: 'exam.title', path: '/app/academic/exams', audiences: ['ADMIN', 'TEACHER'], requiredPermissions: ['exam.read'], readiness: 'available', order: 40 },
 
   // HEM
   { id: 'hem.students', portfolio: 'hem', group: 'group.students', titleKey: 'student.title', path: '/app/hem/students', audiences: ['ADMIN', 'TEACHER'], requiredPermissions: ['student.read'], readiness: 'available', order: 10 },

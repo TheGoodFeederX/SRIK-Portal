@@ -388,34 +388,53 @@ export const studentAttendance = pgTable(
 
 // ---------- Examination ----------
 
-export const exams = pgTable('exams', {
-  id: id(),
-  academicYearId: uuid('academic_year_id')
-    .notNull()
-    .references(() => academicYears.id, { onDelete: 'restrict' }),
-  name: text('name').notNull(),
-  term: text('term'),
-  examType: text('exam_type').notNull(),
-  startDate: date('start_date'),
-  endDate: date('end_date'),
-  status: examStatusEnum('status').notNull().default('DRAFT'),
-  createdBy: uuid('created_by'),
-  createdAt: created(),
-});
+// Examination (spec v1.4). Lifecycle: DRAFT → REVIEW → APPROVED → PUBLISHED (terminal).
+export const exams = pgTable(
+  'exams',
+  {
+    id: id(),
+    academicYearId: uuid('academic_year_id')
+      .notNull()
+      .references(() => academicYears.id, { onDelete: 'restrict' }),
+    name: text('name').notNull(),
+    term: text('term'),
+    examType: text('exam_type').notNull(),
+    startDate: date('start_date'),
+    endDate: date('end_date'),
+    status: examStatusEnum('status').notNull().default('DRAFT'),
+    isActive: boolean('is_active').notNull().default(true),
+    createdBy: uuid('created_by'),
+    createdAt: created(),
+    updatedAt: updated(),
+  },
+  (t) => [index('exams_year_idx').on(t.academicYearId), index('exams_status_idx').on(t.status)],
+);
 
-export const examSubjects = pgTable('exam_subjects', {
-  id: id(),
-  examId: uuid('exam_id')
-    .notNull()
-    .references(() => exams.id, { onDelete: 'cascade' }),
-  subjectId: uuid('subject_id')
-    .notNull()
-    .references(() => subjects.id, { onDelete: 'restrict' }),
-  classId: uuid('class_id')
-    .notNull()
-    .references(() => classes.id, { onDelete: 'cascade' }),
-  maxScore: numeric('max_score', { precision: 6, scale: 2 }).notNull().default('100'),
-});
+export const examSubjects = pgTable(
+  'exam_subjects',
+  {
+    id: id(),
+    examId: uuid('exam_id')
+      .notNull()
+      .references(() => exams.id, { onDelete: 'cascade' }),
+    subjectId: uuid('subject_id')
+      .notNull()
+      .references(() => subjects.id, { onDelete: 'restrict' }),
+    classId: uuid('class_id')
+      .notNull()
+      .references(() => classes.id, { onDelete: 'cascade' }),
+    maxScore: numeric('max_score', { precision: 6, scale: 2 }).notNull().default('100'),
+    passScore: numeric('pass_score', { precision: 6, scale: 2 }),
+    createdAt: created(),
+    updatedAt: updated(),
+  },
+  (t) => [
+    uniqueIndex('exam_subjects_unique').on(t.examId, t.classId, t.subjectId),
+    index('exam_subjects_exam_idx').on(t.examId),
+    index('exam_subjects_class_idx').on(t.classId),
+    index('exam_subjects_subject_idx').on(t.subjectId),
+  ],
+);
 
 export const examMarks = pgTable(
   'exam_marks',
@@ -431,9 +450,13 @@ export const examMarks = pgTable(
     grade: text('grade'),
     remarks: text('remarks'),
     enteredBy: uuid('entered_by'),
+    enteredAt: timestamp('entered_at', { withTimezone: true }),
     reviewedBy: uuid('reviewed_by'),
     approvedBy: uuid('approved_by'),
     updatedAt: updated(),
   },
-  (t) => [uniqueIndex('exam_marks_unique').on(t.examSubjectId, t.studentId)],
+  (t) => [
+    uniqueIndex('exam_marks_unique').on(t.examSubjectId, t.studentId),
+    index('exam_marks_student_idx').on(t.studentId),
+  ],
 );
