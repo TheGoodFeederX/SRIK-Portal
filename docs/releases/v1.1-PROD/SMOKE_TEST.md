@@ -243,3 +243,38 @@ exams 0 · exam_subjects 0 · exam_marks 0 · account_invitations 0 · audit_log
 
 Nota: semua subjek production ketika ini berasal daripada ujian smoke (subjek seed asal telah
 dinyahaktifkan pada v1.3) dan telah dibuang. Data sekolah sebenar belum dimasukkan.
+
+---
+
+# SMOKE TEST v1.4.1 Data Import (2026-11-01)
+
+Deploy `dpl` untuk `aef12dc4` (merge PR #5) + fix `b043234` (raw body streaming).
+Migration `0007_import_sessions.sql` applied from dump `srik-20261101T085946Z.dump` (88 KB).
+
+| # | Semakan | Keputusan |
+|---|---|---|
+| 1 | `GET /health` | ✅ 200 |
+| 2 | `GET /imports/templates/SUBJECTS` | ✅ 200, 8 357 bait, jenis xlsx |
+| 3 | `GET /imports` (riwayat) | ✅ 200 |
+| 4 | `POST /imports` muat naik .xlsx | ✅ 201, `rowCount: 2` |
+| 5 | `POST /imports/:id/validate` | ✅ 200 `{valid:1, invalid:1}` (kod pendua dalam fail → INVALID) |
+| 6 | `POST /imports/:id/confirm` | ✅ 200 `{imported:1, skipped:1, COMPLETED}` |
+| 7 | Subjek dicipta | ✅ `SMO` wujud sekali |
+| 8 | Import semula fail sama | ✅ `{duplicates:2, imported:0, skipped:2}` — tiada pendua |
+| 9 | Guru: `GET /imports` | ✅ 403 |
+| 10 | Guru: `POST /imports` | ✅ 403 |
+| 11 | Guru: templat | ✅ 403 |
+| 12 | Halaman `/app/administration/data-import` | ✅ 200 |
+| 13 | Pembersihan | ✅ subjek `SMO` dinyahaktifkan, sesi import ujian dipadam |
+
+## Isu production ditemui (dibetulkan)
+
+Muat naik multipart gagal dengan `IMPORT_FILE_INVALID` kerana Vercel mem-parse dan menghabiskan
+aliran permintaan sebelum handler. `apps/web/api/handler.ts` kini menolak `bodyParser` dan
+menghantar bait mentah; disahkan semula pada production (muat naik 201).
+
+## Cabaran operasi
+
+Had branch Neon (10) dicapai semasa membuat recovery point v1.4.1. Empat branch dev yang telah
+digabung (`dev-auth-v1-1`, `dev-academic-v1-2`, `dev-timetable-v1-3`, `dev-exams-v1-4`) dipadam
+untuk memberi ruang; branch recovery baharu `rollback-pre-v141-20261101`.
