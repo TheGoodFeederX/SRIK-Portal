@@ -31,6 +31,7 @@ export const PERMISSIONS = [
   'exam.marks.approve',
   'exam.publish',
   'system.user.manage',
+  'system.data.import',
   'system.audit.read',
 ] as const;
 

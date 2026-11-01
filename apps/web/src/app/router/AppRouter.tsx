@@ -12,6 +12,7 @@ import { PortfolioLandingPage } from '@/app/portfolios/PortfolioLandingPage';
 import { StaffPage } from '@/features/administration/StaffPage';
 import { AuditLogPage } from '@/features/administration/AuditLogPage';
 import { UsersPage } from '@/features/administration/UsersPage';
+import { DataImportPage } from '@/features/administration/DataImportPage';
 import { StudentsPage } from '@/features/hem/StudentsPage';
 import { AttendancePage } from '@/features/hem/AttendancePage';
 import { ClassesPage } from '@/features/academic/ClassesPage';
@@ -62,6 +63,7 @@ export function AppRouter() {
         <Route path="administration/staff" element={<StaffPage />} />
         <Route path="administration/users" element={<UsersPage />} />
         <Route path="administration/audit-log" element={<AuditLogPage />} />
+        <Route path="administration/data-import" element={<DataImportPage />} />
         <Route path="academic/classes" element={<ClassesPage />} />
         <Route path="academic/subjects" element={<SubjectsPage />} />
         <Route path="academic/teaching-assignments" element={<AssignmentsPage />} />

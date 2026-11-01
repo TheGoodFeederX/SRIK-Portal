@@ -8,6 +8,7 @@ import { me } from './routes/auth.ts';
 import { onboardingRoutes } from './routes/onboarding.ts';
 import { timetableRoutes } from './routes/timetable.ts';
 import { examRoutes } from './routes/exams.ts';
+import { importRoutes } from './routes/imports.ts';
 import { userRoutes } from './routes/users.ts';
 import { auditLogRoutes } from './routes/audit.ts';
 import { metaRoutes } from './routes/meta.ts';
@@ -136,6 +137,7 @@ v1.route('/', academicRoutes);
 v1.route('/', attendanceRoutes);
 v1.route('/', timetableRoutes);
 v1.route('/', examRoutes);
+v1.route('/', importRoutes);
 
 app.route('/api/v1', v1);
 

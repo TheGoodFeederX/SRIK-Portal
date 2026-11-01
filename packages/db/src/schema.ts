@@ -3,6 +3,7 @@ import {
   boolean,
   date,
   index,
+  integer,
   jsonb,
   numeric,
   pgEnum,
@@ -28,6 +29,27 @@ export const classStatusEnum = pgEnum('class_status', ['ACTIVE', 'ARCHIVED']);
 export const enrollmentStatusEnum = pgEnum('enrollment_status', ['ACTIVE', 'TRANSFERRED', 'WITHDRAWN', 'COMPLETED']);
 export const attendanceStatusEnum = pgEnum('attendance_status', ['PRESENT', 'ABSENT', 'SICK', 'EXCUSED', 'LATE']);
 export const roleEnum = pgEnum('role', ['ADMIN', 'TEACHER']);
+export const importTypeEnum = pgEnum('import_type', ['STAFF', 'STUDENTS', 'CLASSES', 'SUBJECTS', 'ENROLLMENTS', 'ASSIGNMENTS']);
+export const importStatusEnum = pgEnum('import_status', [
+  'UPLOADED',
+  'VALIDATING',
+  'PREVIEW_READY',
+  'CONFIRMED',
+  'PROCESSING',
+  'COMPLETED',
+  'FAILED',
+  'CANCELLED',
+]);
+export const importRowStatusEnum = pgEnum('import_row_status', [
+  'VALID',
+  'WARNING',
+  'INVALID',
+  'DUPLICATE',
+  'CONFLICT',
+  'IMPORTED',
+  'SKIPPED',
+]);
+
 export const schoolDayEnum = pgEnum('school_day', ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY']);
 export const periodTypeEnum = pgEnum('period_type', ['LESSON', 'BREAK', 'ASSEMBLY', 'PRAYER', 'ACTIVITY', 'OTHER']);
 export const examStatusEnum = pgEnum('exam_status', ['DRAFT', 'REVIEW', 'APPROVED', 'PUBLISHED']);
@@ -459,4 +481,48 @@ export const examMarks = pgTable(
     uniqueIndex('exam_marks_unique').on(t.examSubjectId, t.studentId),
     index('exam_marks_student_idx').on(t.studentId),
   ],
+);
+
+// ---------- Data onboarding (v1.4.1) ----------
+
+/** One spreadsheet upload = one import session, previewed then committed atomically. */
+export const importSessions = pgTable(
+  'import_sessions',
+  {
+    id: id(),
+    type: importTypeEnum('type').notNull(),
+    filename: text('filename').notNull(),
+    status: importStatusEnum('status').notNull().default('UPLOADED'),
+    uploadedBy: uuid('uploaded_by').notNull(),
+    rowCount: integer('row_count').default(0).notNull(),
+    validCount: integer('valid_count').default(0).notNull(),
+    invalidCount: integer('invalid_count').default(0).notNull(),
+    warningCount: integer('warning_count').default(0).notNull(),
+    summary: jsonb('summary'),
+    createdAt: created(),
+    confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    failedAt: timestamp('failed_at', { withTimezone: true }),
+  },
+  (t) => [index('import_sessions_type_idx').on(t.type), index('import_sessions_status_idx').on(t.status), index('import_sessions_created_idx').on(t.createdAt)],
+);
+
+export const importRows = pgTable(
+  'import_rows',
+  {
+    id: id(),
+    importSessionId: uuid('import_session_id')
+      .notNull()
+      .references(() => importSessions.id, { onDelete: 'cascade' }),
+    rowNumber: integer('row_number').notNull(),
+    rawData: jsonb('raw_data').notNull(),
+    normalizedData: jsonb('normalized_data'),
+    status: importRowStatusEnum('status').notNull(),
+    errors: jsonb('errors'),
+    warnings: jsonb('warnings'),
+    resolvedEntityId: uuid('resolved_entity_id'),
+    resolution: text('resolution'),
+    createdAt: created(),
+  },
+  (t) => [index('import_rows_session_idx').on(t.importSessionId), index('import_rows_status_idx').on(t.status)],
 );

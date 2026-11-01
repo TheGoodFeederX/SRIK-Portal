@@ -35,6 +35,7 @@ export const registry: ModuleNavigationEntry[] = [
   { id: 'admin.staff', portfolio: 'administration', group: 'group.staff', titleKey: 'staff.title', path: '/app/administration/staff', audiences: ['ADMIN', 'TEACHER'], requiredPermissions: ['staff.read'], readiness: 'available', order: 10 },
   { id: 'admin.staff-attendance', portfolio: 'administration', group: 'group.staff', titleKey: 'attendance.title', path: '/app/administration/staff-attendance', audiences: ['ADMIN'], requiredPermissions: ['staff.read'], readiness: 'deferred', order: 20 },
   { id: 'admin.finance', portfolio: 'administration', group: 'group.finance', titleKey: 'portfolio.administration.title', path: '/app/administration/finance', audiences: ['ADMIN'], readiness: 'deferred', order: 30 },
+  { id: 'admin.import', portfolio: 'administration', group: 'group.system', titleKey: 'import.title', path: '/app/administration/data-import', audiences: ['ADMIN'], requiredPermissions: ['system.data.import'], readiness: 'available', order: 35 },
   { id: 'admin.audit', portfolio: 'administration', group: 'group.system', titleKey: 'audit.title', path: '/app/administration/audit-log', audiences: ['ADMIN'], requiredPermissions: ['system.audit.read'], readiness: 'available', order: 40 },
   { id: 'admin.users', portfolio: 'administration', group: 'group.system', titleKey: 'users.title', path: '/app/administration/users', audiences: ['ADMIN'], requiredPermissions: ['system.user.manage'], readiness: 'available', order: 50 },
 

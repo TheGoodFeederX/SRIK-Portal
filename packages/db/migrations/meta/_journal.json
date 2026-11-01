@@ -50,6 +50,13 @@
       "when": 1793511955924,
       "tag": "0006_exams_v14",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793521889436,
+      "tag": "0007_import_sessions",
+      "breakpoints": true
     }
   ]
 }
