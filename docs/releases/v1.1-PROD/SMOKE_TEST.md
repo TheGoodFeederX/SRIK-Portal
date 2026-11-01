@@ -174,3 +174,29 @@ Deploy `dpl_GTyX4KEghZD5FMJLuGdJGnKPHbk6` (`4ad7f4ec`).
 | 18 | Endpoint login legacy | ✅ 404 |
 | 19 | Permintaan tanpa sesi | ✅ 401 |
 | 20 | Stage B: `sessions` + `password_hash` | ✅ ABSENT |
+
+---
+
+# SMOKE TEST v1.3 Timetable (2026-11-01)
+
+Deploy `dpl_7BsAABFLUnQGgFT2DQXMjNtTnyau` (`68e11157`). Migration `0004`, `0005` applied
+(direct connection) from recovery point `rollback-pre-v1.3-20261101` + dump
+`srik-20261101T050923Z.dump`.
+
+| # | Semakan | Keputusan |
+|---|---|---|
+| 1 | `GET /api/v1/health` | ✅ 200 |
+| 2 | `GET /timetable/periods` · `/entries` · `/me` · `/summary` | ✅ 200 |
+| 3 | Cipta waktu (LESSON) | ✅ 201 |
+| 4 | Cipta entri jadual dengan agihan sah | ✅ 201 |
+| 5 | Konflik kelas (slot sama) | ✅ 409 `TIMETABLE_CLASS_CONFLICT` |
+| 6 | Konflik guru (guru sama, kelas lain, slot sama) | ✅ 409 `TIMETABLE_TEACHER_CONFLICT` |
+| 7 | Agihan tidak sepadan kelas | ✅ 409 `TIMETABLE_INVALID_ASSIGNMENT` |
+| 8 | Guard padam agihan yang dirujuk | ✅ 409 `ASSIGNMENT_IN_USE` |
+| 9 | `GET /timetable/classes/:id` | ✅ 200 |
+| 10 | `GET /timetable/teachers/:id` (admin) | ✅ 200 |
+| 11 | Jadual Saya (guru) | ✅ 200 |
+| 12 | Guru cipta waktu (manage) | ✅ 403 |
+| 13 | Guru lihat jadual guru lain | ✅ 403 |
+| 14 | Ringkasan tamat ujian | ✅ `timetableEntries: 0` |
+| 15 | Pembersihan data ujian | ✅ entri/agihan/waktu dipadam, subjek dinyahaktifkan |
