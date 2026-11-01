@@ -76,3 +76,15 @@ Jika mana-mana berlaku: hentikan rollout, ikut §51 (`RELEASE_PLAN.md` §6), rek
 | 0.3 | 2026-10-31 16:5x | Naik taraf drizzle-orm 0.45.4, drizzle-kit 0.31.11, zod 4.6.7 | agent | PASS | tidak | ujian tempatan hijau selepas penyesuaian |
 | 0.4 | 2026-10-31 16:5x | CI kedua pada PR #1 (`3d375892`) | agent | PASS | tidak | semua gate lulus |
 | 0.5 | 2026-10-31 | Token GitHub/Neon/Vercel disemak | agent | BLOCKED | tidak | ketiga-tiga masih aktif → PROD-1 belum |
+
+---
+
+## Insiden selepas cutover (2026-11-01)
+
+| # | Masa (UTC) | Insiden | Punca | Tindakan | Status |
+|---|---|---|---|---|---|
+| P1 | 2026-11-01 | Log masuk production gagal ("Emel atau kata laluan tidak sah") | Password admin production ialah `SrikProd2026!` (ditetapkan semasa cutover), manakala dokumen menyebut `SrikAdmin2026!` | Kata laluan production diselaraskan kepada `SrikAdmin2026!` melalui modul kredensial; log masuk disahkan 200 | SELESAI |
+| P2 | 2026-11-01 | Selepas log masuk, aplikasi kembali signed-out | Cookie sesi Managed Auth diterbitkan untuk hos servis auth, bukan hos aplikasi → `/api/v1` tidak menerima cookie | `/neonauth/*` diproksikan melalui fungsi `/api/neonauth` supaya cookie menjadi first-party; `VITE_NEON_AUTH_URL` ditukar ke laluan same-origin | SELESAI |
+
+**Amaran:** `SrikAdmin2026!` ialah kata laluan sementara. Tukar melalui `/tukar-kata-laluan`
+sebelum data sekolah sebenar dimasukkan.

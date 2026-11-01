@@ -136,3 +136,29 @@ Dilarang: kata laluan, cookie sesi, JWT, token pengesahan, token reset, kunci ra
 ## 9. Senarai semak production auth
 
 Rujuk `docs/migrations/AUTH_MIGRATION_v1.1.md` §6.
+
+---
+
+## 10. Same-origin auth transport (2026-11-01)
+
+Managed Better Auth sets its session cookie on the host that answers the request. Serving the
+auth client straight from the auth service host meant the browser stored
+`__Secure-neon-auth.session_token` for that host, so `/api/v1` never received it and every
+session looked signed-out.
+
+```text
+Browser → https://srik-portal.vercel.app/neonauth/*        (first-party origin)
+        → /api/neonauth function  (apps/web/api/neonauth.ts)
+        → https://<branch>.neonauth.<region>.aws.neon.tech/neondb/auth/*
+```
+
+- `apps/web/vercel.json` rewrites `/neonauth/:path*` → `/api/neonauth?p=:path*`.
+- The proxy forwards only auth-relevant headers (`content-type`, `cookie`, `accept`, `origin`,
+  `referer`, `user-agent`, `authorization`) and copies `Set-Cookie` verbatim. Host and
+  `x-forwarded-*` must not be forwarded — the auth service rejects a foreign hostname
+  (`INVALID_HOSTNAME`).
+- The proxy contains **no** authentication logic: credentials and sessions remain owned by the
+  Managed Auth service.
+- `VITE_NEON_AUTH_URL` is the same-origin path; `NEON_AUTH_BASE_URL` stays the direct upstream
+  URL for server-side verification.
+- Development mirrors this with a Vite proxy for `/neonauth`.
