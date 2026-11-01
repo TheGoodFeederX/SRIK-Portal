@@ -43,7 +43,16 @@ Browser → Neon Managed Better Auth (neon_auth.*)
 | Shell 404 | ✅ | route `/app/*` tidak dikenali |
 | Legacy code | ⚠️ dibuang daripada kod | `password.ts`, endpoint login, cookie `srik_session` |
 | Legacy schema | ⚠️ **dikekalkan** | `public.sessions`, `profiles.password_hash` untuk rollback |
-| Cutover production | ❌ belum | menunggu kelulusan pemilik |
+| Cutover production | ✅ 2026-10-31 | PR #1 merge `135d8967`, deploy `dpl_22mZR7NWf73QTb3hr6FRobyQVD9m` |
+
+### Pautan admin production
+
+```text
+neon_auth.user id 105d17d9-0a5d-4166-a488-b1ad8ec15300
+profiles.id       7441dfb3-12ab-4760-a5de-fbe2b21aa84d  (email admin@srik.local)
+Neon branch       main / br-mute-sun-b3t283ay
+Recovery branch   rollback-pre-v1.1-prod / br-noisy-base-b3iqq2ey
+```
 
 ### Pautan admin dev
 
@@ -95,6 +104,8 @@ pautkan semula atau gunakan aliran jemputan selepas rollback.
 
 ## 6. Stage B — belum dijalankan (perlu kelulusan bertulis)
 
+> Stage A-PROD telah selesai; Stage B masih memerlukan `docs/releases/v1.1-PROD/STAGE_B_APPROVAL.md`.
+
 ```text
 [ ] Cutover production disahkan stabil (>= 1 minggu penggunaan sebenar)
 [ ] Semua pengguna aktif dipautkan (profiles.auth_user_id NOT NULL bagi status ACTIVE)
@@ -122,7 +133,7 @@ Authentication
 [x] Managed Auth menjadi sumber identiti (dev)
 [x] login / logout / restore session / reset kata laluan (UI + servis)
 [x] pengesahan kata laluan custom tidak lagi digunakan
-[ ] production cutover
+[x] production cutover (2026-10-31)
 
 Application identity
 [x] profiles.auth_user_id memautkan identiti

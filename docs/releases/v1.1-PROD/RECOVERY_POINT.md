@@ -1,47 +1,30 @@
 # RECOVERY_POINT — v1.1-PROD
 
-> **Status:** TEMPLAT — belum diisi. Diisi semasa PROD-2 sebelum sebarang perubahan production.
-> Jangan simpan sebarang kredensial dalam dokumen ini.
+> Rekod keadaan production sebelum cutover. Kemas kini semasa PROD-2. **Tiada kredensial di sini.**
 
 ---
 
-## Semasa (production pra-cutover)
-
-| Item | Nilai | Cara semak |
-|---|---|---|
-| Tarikh/masa | — | — |
-| Git `main` SHA | — | `git rev-parse main` |
-| Vercel deployment ID | — | `vercel ls` / dashboard |
-| Vercel deployment URL | `https://srik-portal.vercel.app` | smoke `GET /api/v1/health` |
-| Neon branch | `br-mute-sun-b3t283ay` (`main`) | `GET /api/v2/projects/{p}/branches` |
-| Neon endpoint | `ep-dry-sunset-b3scjaeb` (pooled) | console |
-| Migration journal | `0000_broad_moon_knight` | `packages/db/migrations/meta/_journal.json` |
-| Snapshot/restore point ID | — | Neon console → Restore |
-| `pg_dump` (pilihan) | — | direct/unpooled connection |
-| Operator | — | — |
-
----
-
-## Isi semula selepas Stage B
+## Pra-cutover (PROD-2, 2026-10-31)
 
 | Item | Nilai |
 |---|---|
-| Tarikh/masa | — |
-| Git SHA | — |
-| Vercel deployment ID | — |
-| Migration journal | — |
-| Snapshot ID | — |
-| Operator | — |
+| Tarikh/masa (UTC) | 2026-10-31 |
+| Git `main` SHA | `07086134` |
+| Vercel deployment ID (production) | `dpl_74HYPNaA9SDpdyNJDf6Et9gffh3G` |
+| Vercel deployment URL | `https://srik-portal-qxj8wpa2g-thegoodfeederxs-projects.vercel.app` |
+| Alias production | `https://srik-portal.vercel.app` |
+| Deployment terdahulu (fallback) | `dpl_DK6AFLfJfmXykoQu228akukQ9rdp` (`b711ad1c`) |
+| Neon branch (production) | `br-mute-sun-b3t283ay` (`main`) |
+| Neon endpoint | `ep-dry-sunset-b3scjaeb` (pooled) |
+| Migration journal | `0000_broad_moon_knight` sahaja |
+| Recovery branch (Neon) | `br-noisy-base-b3iqq2ey` (`rollback-pre-v1.1-prod`) — salinan `main` sebelum Migration A |
+| Operator | agent (arahan pemilik: "Luluskan penuh termasuk merge + deploy production") |
+| Keadaan disahkan | `GET /api/v1/health` → 200; `POST /api/v1/auth/login` → 400 (legacy aktif) |
 
----
-
-## Prosedur pulih (ringkas)
+### Pengesahan rollback
 
 ```text
-1. Neon Console → Branch → Restore → pilih timestamp/restore point
-   (alternatif: buat branch baharu dari restore point, uji, kemudian tukar DATABASE_URL)
-2. Vercel → Promotions → pilih deployment yang direkod di atas
-3. Sahkan GET /api/v1/health → 200 dan POST /api/v1/auth/login (legacy, jika pra-cutover)
+Vercel → Promotions → dpl_74HYPNaA9SDpdyNJDf6Et9gffh3G
+Neon   → branch rollback-pre-v1.1-prod (br-noisy-base-b3iqq2ey)
+         DATABASE_URL = <definisi pooler branch tersebut>
 ```
-
-Rujukan: `docs/releases/v1.1-PROD/RESTORE_DRILL.md`.

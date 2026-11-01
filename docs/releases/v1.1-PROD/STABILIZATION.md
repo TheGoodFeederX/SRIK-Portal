@@ -2,7 +2,7 @@
 
 > Tempoh pemerhatian selepas cutover (§53, §54). **Stage B dilarang** sepanjang tempoh ini.
 
-**Mula:** —
+**Mula:** 2026-10-31 (selepas deploy `dpl_22mZR7NWf73QTb3hr6FRobyQVD9m`)
 **Tamat (cadangan minimum):** 14 hari penggunaan sebenar ATAU 30 hari kalendar, mana lebih awal
 
 ---

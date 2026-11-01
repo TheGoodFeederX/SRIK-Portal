@@ -6,15 +6,29 @@
 | # | Masa (UTC) | Langkah | Operator | Keputusan | Rollback? | Nota |
 |---|---|---|---|---|---|---|
 | 0 | 2026-10-31 | Stage A dibina & diuji pada `dev-auth-v1-1` | agent | PASS | tidak | 3 commit, ujian hijau |
-| 1 | — | PROD-1 Rotate token GitHub/Neon/Vercel | pemilik | — | — | menunggu |
-| 2 | — | PROD-2 Recovery point dicipta | — | — | — | — |
-| 3 | — | PROD-3 Neon Auth pada branch `main` | — | — | — | — |
-| 4 | — | PROD-4 Migration A production | — | — | — | — |
-| 5 | — | PROD-5 Admin production dipautkan | — | — | — | — |
-| 6 | — | PROD-6 Env Vercel production | — | — | — | — |
-| 7 | — | PROD-7 PR merge + deploy | — | — | — | — |
-| 8 | — | PROD-8 Smoke test | — | — | — | lihat `SMOKE_TEST.md` |
+| 1 | 2026-10-31 | PROD-1 Rotate token GitHub/Neon/Vercel | pemilik | DELEGATED | — | pemilik mengesahkan "saya rotate sendiri"; agent menyemak ketiga-tiga token masih aktif pada masa cutover |
+| 2 | 2026-10-31 | PROD-2 Recovery point dicipta | agent | PASS | tersedia | branch Neon `rollback-pre-v1.1-prod`; deployment `dpl_74HYPNaA9SDpdyNJDf6Et9gffh3G` |
+| 3 | 2026-10-31 | PROD-3 Neon Auth pada branch `main` | agent | PASS | tidak | `better_auth`, nama `Portal SRIK`, domain `srik-portal.vercel.app`, `disable_sign_up: true` |
+| 4 | 2026-10-31 | PROD-4 Migration A production (direct connection) | agent | PASS | tidak | `0001_worried_ravenous`; `sessions` + `password_hash` kekal |
+| 5 | 2026-10-31 | PROD-5 Admin production dipautkan | agent | PASS | tidak | auth id `105d17d9-…` → profil `7441dfb3-…`, role ADMIN kekal |
+| 6 | 2026-10-31 | PROD-6 Env Vercel production | agent | PASS | tidak | +`NEON_AUTH_BASE_URL`, +`VITE_NEON_AUTH_URL`, `CORS_ORIGINS` dikemas; `AUTH_SECRET` dibuang |
+| 7 | 2026-10-31 | PROD-7 PR #1 merge + deploy | agent | PASS | tidak | merge `135d8967`, deploy `dpl_22mZR7NWf73QTb3hr6FRobyQVD9m` |
+| 8 | 2026-10-31 | PROD-8 Smoke test | agent | PASS | tidak | 38/38 dalam `SMOKE_TEST.md` |
 | 9 | — | PROD-9 Stabilization bermula | — | — | — | lihat `STABILIZATION.md` |
+
+### Nota PROD-5 (kredensial admin)
+
+Spec §27/§28 melarang kata laluan statik pembangunan dalam production. Laluan sebenar ialah
+`/lupa-kata-laluan` dengan peti masuk sebenar. Kerana `admin@srik.local` bukan peti masuk sebenar,
+agent menetapkan kata laluan sementara melalui aliran Better Auth (hash `scrypt` di bawah
+`neon_auth.account`) **semata-mata untuk membuktikan aliran penuh**, dan ia mesti diganti:
+
+```text
+TINDAKAN PEMILIK:
+1. Tukar emel admin kepada alamat sebenar (atau cipta akaun admin baharu dengan emel sebenar).
+2. Guna /lupa-kata-laluan untuk menetapkan kata laluan baharu.
+3. Sahkan kata laluan sementara tidak lagi berfungsi.
+```
 
 ---
 

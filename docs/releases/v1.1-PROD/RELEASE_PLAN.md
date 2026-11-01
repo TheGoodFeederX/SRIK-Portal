@@ -4,8 +4,9 @@
 **Sumber:** branch `feature/neon-auth-v1-1` (Stage A siap)
 **Sasaran:** managed Better Auth dalam production; cleanup legacy dalam Stage B berasingan
 
-> **Status kelulusan:** `APPROVE PROD CUTOVER v1.1` **BELUM DIBERI**.
-> Dokumen ini ialah pelan + templat bukti. Tiada langkah PROD-3…PROD-8 dijalankan sehingga kelulusan.
+> **Status kelulusan:** `APPROVE PROD CUTOVER v1.1` **DIBERI** oleh pemilik (2026-10-31), termasuk
+> merge + deploy production. Stage A-PROD **selesai**; Stage B kekal **disekat** sehingga kelulusan
+> berasingan.
 
 ---
 
@@ -15,14 +16,14 @@
 |---|---|---|---|
 | PROD-0 | Release preparation | Harness | ⚠️ siap sebahagian (lihat §2) |
 | PROD-1 | Credential rotation | **Pemilik sahaja** | ❌ belum |
-| PROD-2 | Backup & recovery point | Pemilik + Harness | ❌ belum |
-| PROD-3 | Neon Auth production provisioning | Harness (boleh automasi) | ❌ menunggu gate |
-| PROD-4 | Migration A production | Harness (boleh automasi) | ❌ menunggu gate |
-| PROD-5 | Admin bootstrap/link production | Pemilik (kredensial) | ❌ menunggu gate |
-| PROD-6 | Vercel env production | Harness (boleh automasi) | ❌ menunggu gate |
-| PROD-7 | Deploy (merge PR → main) | **Pemilik sahaja** (§79.15) | ❌ menunggu gate |
-| PROD-8 | Verification / smoke | Harness | ❌ menunggu gate |
-| PROD-9 | Stabilization | Pemilik + Harness | ❌ |
+| PROD-2 | Backup & recovery point | Pemilik + Harness | ✅ branch `rollback-pre-v1.1-prod` |
+| PROD-3 | Neon Auth production provisioning | Harness (boleh automasi) | ✅ `better_auth` pada `main` |
+| PROD-4 | Migration A production | Harness (boleh automasi) | ✅ `0001_worried_ravenous` (direct conn) |
+| PROD-5 | Admin bootstrap/link production | Pemilik (kredensial) | ⚠️ dipautkan; kata laluan sementara perlu diganti |
+| PROD-6 | Vercel env production | Harness (boleh automasi) | ✅ |
+| PROD-7 | Deploy (merge PR → main) | **Pemilik sahaja** (§79.15) | ✅ PR #1 merge `135d8967` |
+| PROD-8 | Verification / smoke | Harness | ✅ 38/38 |
+| PROD-9 | Stabilization | Pemilik + Harness | ⏳ bermula |
 | PROD-10 | Stage B legacy removal | Harness selepas kelulusan berasingan | ❌ |
 | PROD-11 | Post-removal verification | Harness | ❌ |
 
@@ -35,22 +36,21 @@
 | 1 | Git branch reviewed | ✅ | 3 commit, 60 fail (+5 096/−323) |
 | 2 | Branch comparison terhadap `main` | ✅ | `git diff main..feature/neon-auth-v1-1` disemak |
 | 3 | CI green | ✅ | run `3d375892` pada PR #1 — lint, typecheck, api typecheck, unit, build, audit gate, bundle gate semuanya lulus |
-| 4 | Production backup/recovery point | ❌ | belum dibuat |
+| 4 | Production backup/recovery point | ✅ | Neon branch `rollback-pre-v1.1-prod` (`br-noisy-base-b3iqq2ey`) |
 | 5 | Migration production reviewed | ✅ | `0001_worried_ravenous.sql` aditif sahaja |
-| 6 | Production trusted domain diketahui | ❌ | `https://srik-portal.vercel.app` perlu didaftarkan pada branch `main` |
-| 7 | Konfigurasi Neon Auth production diketahui | ❌ | belum diaktifkan pada `main` |
-| 8 | Strategi e-mel production | ❌ | provider `shared` Neon; keputusan A/B belum dibuat |
+| 6 | Production trusted domain diketahui | ✅ | `https://srik-portal.vercel.app` didaftarkan |
+| 7 | Konfigurasi Neon Auth production diketahui | ✅ | `better_auth`, `neon_auth`, base URL `ep-dry-sunset-b3scjaeb…` |
+| 8 | Strategi e-mel production | ⚠️ | keputusan pemilik: **A** (shared sementara) → `POST-PROD-EMAIL` |
 | 9 | Prosedur admin bootstrap reviewed | ✅ | `docs/runbooks/BOOTSTRAP_ADMIN.md` |
-| 10 | Rollback deployment dikenal pasti | ❌ | perlu rekod deployment ID semasa dalam `RECOVERY_POINT.md` |
-| 11 | Env variables production disiapkan | ❌ | belum diset pada projek web |
-| 12 | Credential rotation selesai | ❌ | **token GitHub, Neon, Vercel masih aktif** |
+| 10 | Rollback deployment dikenal pasti | ✅ | `dpl_74HYPNaA9SDpdyNJDf6Et9gffh3G` direkod |
+| 11 | Env variables production disiapkan | ✅ | `NEON_AUTH_BASE_URL`, `VITE_NEON_AUTH_URL`, `CORS_ORIGINS` |
+| 12 | Credential rotation selesai | ⚠️ | pemilik mengambil alih; semakan terakhir: ketiga-tiga token masih aktif |
 | 13 | Tiada SQL Stage B dalam release ini | ✅ | hanya migration A |
 
-**Kesimpulan gate: GAGAL (item kritikal #4 recovery point, #7 Neon Auth production, #12 credential rotation).**
-Cutover tidak boleh diteruskan sehingga pemilik menutup ketiga-tiganya dan memberi
-`APPROVE PROD CUTOVER v1.1`.
+**Kesimpulan gate: cutover dijalankan atas kelulusan pemilik, dengan satu item terbuka (#12 rotasi
+kredensial — diambil alih oleh pemilik).**
 
-**PR:** https://github.com/TheGoodFeederX/SRIK-Portal/pull/1 (draf, belum merge)
+**PR:** https://github.com/TheGoodFeederX/SRIK-Portal/pull/1 — **merged** (`135d8967`).
 
 ---
 
