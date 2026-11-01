@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { academicYears, enrollments, studentAttendance, students } from '@srik/db';
 import { requirePermission, requireUser } from '../auth/session.ts';
-import { scopedClassIds, writeAudit } from './audit.ts';
+import { writeAudit } from './audit.ts';
+import { getTeacherClassIds } from '../auth/scope.ts';
 import type { AppEnv } from '../types.ts';
 
 const excluded = (col: string) => sql.raw(`excluded."${col}"`);
@@ -30,7 +31,8 @@ attendanceRoutes.get('/attendance/students', requirePermission('attendance.stude
   const user = requireUser(c);
   const date = c.req.query('date');
   const classId = c.req.query('classId');
-  const scope = await scopedClassIds(c.var.db, user);
+  const classScope = await getTeacherClassIds(c.var.db, user);
+  const scope = classScope.unrestricted ? null : classScope.classIds;
   const filters = [];
   if (date) filters.push(eq(studentAttendance.attendanceDate, date));
   if (classId) filters.push(eq(studentAttendance.classId, classId));
@@ -61,10 +63,12 @@ attendanceRoutes.get('/attendance/students', requirePermission('attendance.stude
 attendanceRoutes.post('/attendance/students', requirePermission('attendance.student.take'), async (c) => {
   const user = requireUser(c);
   const input = takeInput.parse(await c.req.json());
-  const scope = await scopedClassIds(c.var.db, user);
-  if (scope && !scope.includes(input.classId)) throw new HTTPException(403, { message: 'Anda hanya boleh merekod kelas anda.' });
+  const classScope = await getTeacherClassIds(c.var.db, user);
+  if (!classScope.unrestricted && !classScope.classIds.includes(input.classId)) {
+    throw new HTTPException(403, { message: 'Anda hanya boleh merekod kelas anda.', cause: { code: 'CLASS_SCOPE_DENIED' } });
+  }
 
-  // Only students actually enrolled in this class for the current year can be recorded.
+  // Only students with an ACTIVE enrollment in this class for the current year (v1.2 §23).
   const enrolled = await c.var.db
     .select({ id: enrollments.studentId })
     .from(enrollments)

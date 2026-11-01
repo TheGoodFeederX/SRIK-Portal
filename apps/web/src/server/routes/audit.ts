@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { desc, eq, inArray } from 'drizzle-orm';
-import { auditLog, classes, enrollments, staff, teachingAssignments } from '@srik/db';
+import { desc, eq } from 'drizzle-orm';
+import { auditLog } from '@srik/db';
 import type { AppEnv, ApplicationUser } from '../types.ts';
 import { requirePermission } from '../auth/session.ts';
+import { getTeacherClassIds, getTeacherStudentIds } from '../auth/scope.ts';
 
 type Db = AppEnv['Variables']['db'];
 
@@ -44,25 +45,17 @@ export const listQuery = z.object({
  * Record scope for TEACHER users: classes they teach (teaching assignment) or class-teach (homeroom).
  * ADMIN is unrestricted. Returns null = unrestricted, [] = no records visible.
  */
+/** @deprecated use auth/scope.ts getTeacherClassIds — kept for existing call sites. */
 export async function scopedClassIds(db: Db, user: ApplicationUser): Promise<string[] | null> {
-  if (user.roles.includes('ADMIN')) return null;
-  const [staffRow] = await db.select({ id: staff.id }).from(staff).where(eq(staff.profileId, user.profileId)).limit(1);
-  if (!staffRow) return [];
-  const teaching = await db
-    .select({ classId: teachingAssignments.classId })
-    .from(teachingAssignments)
-    .where(eq(teachingAssignments.teacherId, staffRow.id));
-  const homeroom = await db.select({ classId: classes.id }).from(classes).where(eq(classes.classTeacherId, staffRow.id));
-  return [...new Set([...teaching, ...homeroom].map((r) => r.classId))];
+  const scope = await getTeacherClassIds(db, user);
+  return scope.unrestricted ? null : scope.classIds;
 }
+
 
 /** Student ids visible to the user (null = all). Teachers: their classes' enrollments. */
 export async function scopedStudentIds(db: Db, user: ApplicationUser): Promise<string[] | null> {
-  const classIds = await scopedClassIds(db, user);
-  if (classIds === null) return null;
-  if (classIds.length === 0) return [];
-  const rows = await db.select({ studentId: enrollments.studentId }).from(enrollments).where(inArray(enrollments.classId, classIds));
-  return [...new Set(rows.map((r) => r.studentId))];
+  const scope = await getTeacherStudentIds(db, user);
+  return scope.unrestricted ? null : scope.ids;
 }
 
 export const auditLogRoutes = new Hono<AppEnv>();

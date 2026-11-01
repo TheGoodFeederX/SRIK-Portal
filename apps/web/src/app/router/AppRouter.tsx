@@ -15,6 +15,9 @@ import { UsersPage } from '@/features/administration/UsersPage';
 import { StudentsPage } from '@/features/hem/StudentsPage';
 import { AttendancePage } from '@/features/hem/AttendancePage';
 import { ClassesPage } from '@/features/academic/ClassesPage';
+import { SubjectsPage } from '@/features/academic/SubjectsPage';
+import { AssignmentsPage } from '@/features/academic/AssignmentsPage';
+import { EnrollmentsPage } from '@/features/academic/EnrollmentsPage';
 import { PlaceholderPage } from '@/components/layout/PlaceholderPage';
 import { NotFoundPage } from '@/components/layout/NotFoundPage';
 
@@ -55,6 +58,9 @@ export function AppRouter() {
         <Route path="administration/users" element={<UsersPage />} />
         <Route path="administration/audit-log" element={<AuditLogPage />} />
         <Route path="academic/classes" element={<ClassesPage />} />
+        <Route path="academic/subjects" element={<SubjectsPage />} />
+        <Route path="academic/teaching-assignments" element={<AssignmentsPage />} />
+        <Route path="academic/enrollments" element={<EnrollmentsPage />} />
         <Route path="hem/students" element={<StudentsPage />} />
         <Route path="hem/attendance" element={<AttendancePage />} />
         <Route path=":portfolio" element={<PortfolioLandingPage />} />

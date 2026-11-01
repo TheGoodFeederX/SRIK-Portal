@@ -40,7 +40,9 @@ export const registry: ModuleNavigationEntry[] = [
 
   // Akademik
   { id: 'academic.classes', portfolio: 'academic', group: 'group.academic', titleKey: 'classes.title', path: '/app/academic/classes', audiences: ['ADMIN', 'TEACHER'], requiredPermissions: ['academic.class.read'], readiness: 'available', order: 10 },
-  { id: 'academic.subjects', portfolio: 'academic', group: 'group.academic', titleKey: 'portfolio.academic.title', path: '/app/academic/subjects', audiences: ['ADMIN', 'TEACHER'], requiredPermissions: ['academic.subject.read'], readiness: 'placeholder', order: 20 },
+  { id: 'academic.subjects', portfolio: 'academic', group: 'group.academic', titleKey: 'subjects.title', path: '/app/academic/subjects', audiences: ['ADMIN', 'TEACHER'], requiredPermissions: ['academic.subject.read'], readiness: 'available', order: 20 },
+  { id: 'academic.assignments', portfolio: 'academic', group: 'group.academic', titleKey: 'assignments.title', path: '/app/academic/teaching-assignments', audiences: ['ADMIN', 'TEACHER'], requiredPermissions: ['academic.assignment.read'], readiness: 'available', order: 25 },
+  { id: 'academic.enrollments', portfolio: 'academic', group: 'group.academic', titleKey: 'enrollments.title', path: '/app/academic/enrollments', audiences: ['ADMIN', 'TEACHER'], requiredPermissions: ['student.read'], readiness: 'available', order: 28 },
   { id: 'academic.timetable', portfolio: 'academic', group: 'group.academic', titleKey: 'portfolio.academic.title', path: '/app/academic/timetable', audiences: ['ADMIN', 'TEACHER'], requiredPermissions: ['timetable.read'], readiness: 'placeholder', order: 30 },
   { id: 'academic.exams', portfolio: 'academic', group: 'group.academic', titleKey: 'portfolio.academic.title', path: '/app/academic/exams', audiences: ['ADMIN', 'TEACHER'], readiness: 'placeholder', order: 40 },
 

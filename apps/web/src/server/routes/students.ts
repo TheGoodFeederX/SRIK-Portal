@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { and, eq, ilike, inArray, or, sql, type SQL } from 'drizzle-orm';
 import { guardians, students, studentGuardians } from '@srik/db';
 import { requirePermission, requireUser } from '../auth/session.ts';
-import { listQuery, scopedStudentIds, writeAudit } from './audit.ts';
+import { listQuery, writeAudit } from './audit.ts';
+import { getTeacherStudentIds } from '../auth/scope.ts';
 import { idParam } from '../app.ts';
 import type { AppEnv } from '../types.ts';
 
@@ -39,7 +40,8 @@ export const studentRoutes = new Hono<AppEnv>();
 studentRoutes.get('/', requirePermission('student.read'), async (c) => {
   const user = requireUser(c);
   const { q, limit, offset } = listQuery.parse(c.req.query());
-  const scope = await scopedStudentIds(c.var.db, user);
+  const studentScope = await getTeacherStudentIds(c.var.db, user);
+  const scope = studentScope.unrestricted ? null : studentScope.ids;
   if (scope && scope.length === 0) {
     return c.json({ data: [], meta: { total: 0, limit, offset }, requestId: c.var.requestId });
   }
@@ -55,8 +57,10 @@ studentRoutes.get('/', requirePermission('student.read'), async (c) => {
 studentRoutes.get('/:id', requirePermission('student.read'), async (c) => {
   const user = requireUser(c);
   const id = idParam(c);
-  const scope = await scopedStudentIds(c.var.db, user);
-  if (scope && !scope.includes(id)) throw new HTTPException(403, { message: 'Anda tidak mempunyai akses.' });
+  const studentScope = await getTeacherStudentIds(c.var.db, user);
+  if (!studentScope.unrestricted && !studentScope.ids.includes(id)) {
+    throw new HTTPException(403, { message: 'Anda tidak mempunyai akses.', cause: { code: 'CLASS_SCOPE_DENIED' } });
+  }
   const [row] = await c.var.db.select().from(students).where(eq(students.id, id)).limit(1);
   if (!row) throw new HTTPException(404, { message: 'Murid tidak dijumpai.' });
   const guardianRows = await c.var.db
